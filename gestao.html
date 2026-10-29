@@ -204,6 +204,32 @@ body[data-mode="leitor"] .page{max-width:560px}
   body[data-mode="leitor"] .app{height:auto;overflow:visible}
   body[data-mode="leitor"] .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 }
+/* ---------- painel no celular: tabela vira lista de cartões ---------- */
+@media (max-width:640px){
+  .page{gap:14px}
+  .intro h1{font-size:20px}
+  .adm-top{padding:14px 16px;gap:4px}
+  .adm-top .who{margin-left:0;text-align:left!important}
+  .adm .kpis{padding:0 4px}
+  .adm .kpi{padding:10px 12px}
+  .adm .kpi .n{font-size:22px}
+  .adm .subtabs{padding:4px 12px 0}
+  .adm .pane{padding:4px 16px 16px}
+  .adm .tbl-wrap{overflow:visible}
+  .adm table{min-width:0;display:block}
+  .adm thead{display:none}
+  .adm tbody{display:block}
+  .adm tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .adm td{display:block;border:0!important;padding:0!important;height:auto;white-space:normal!important;min-width:0}
+  .adm td:first-child{grid-column:1/-1;font-weight:600}
+  .adm td:last-child:has(.acts){grid-column:1/-1;margin-top:6px}
+  .adm td[data-l]::before{content:attr(data-l);display:block;font-size:12px;color:var(--muted);font-weight:400}
+  .adm .acts{justify-content:flex-start;flex-wrap:wrap}
+  .adm .acts .btn.sm{flex:1;min-width:120px}
+  .adm .adm-search{min-width:0!important}
+  .adm .reps{grid-template-columns:minmax(0,1fr)}
+  .adm .row{flex-wrap:wrap}
+}
 </style>
 
 </head>
@@ -490,6 +516,7 @@ function renderAdm(){
   <div class="kpis"><div class="kpi"><div class="n">${D.loans.length}</div><span>emprestados agora</span></div><div class="kpi"><div class="n ${nLate?'warn':''}">${nLate}</div><span>atrasados</span></div><div class="kpi"><div class="n">${back}</div><span>devolvidos em outubro</span></div><div class="kpi"><div class="n ${nRep?'warn':''}">${nRep}</div><span>reportes em aberto</span></div></div>
   <div class="subtabs" role="tablist">${tabs.map(([k,t,c,w])=>`<button role="tab" data-tab="${k}" aria-selected="${A.tab===k}">${t}<span class="c ${w}">${c.toLocaleString('pt-BR')}</span></button>`).join('')}</div>
   <div class="pane">${{com:tCom,rep:tRep,leitores:tLeitores,acervo:tAcervo,hist:tHist}[A.tab]()}</div>`;
+  adm.querySelectorAll('table').forEach(tb=>{const hs=[...tb.querySelectorAll('th')].map(h=>h.textContent.trim());tb.querySelectorAll('tbody tr').forEach(tr=>[...tr.children].forEach((td,i)=>{if(i>0&&hs[i]&&tr.children.length>1)td.dataset.l=hs[i]}))});
   if(fa){const q=document.getElementById('aq');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
 }
 adm.addEventListener('input',e=>{
