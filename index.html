@@ -150,6 +150,43 @@ tr.new td{background:var(--soft)}
 .notes{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:13.5px;max-width:90ch;border-top:1px solid var(--line);padding-top:14px}
 .notes b{color:var(--ink);font-weight:600}
 @media (prefers-reduced-motion:reduce){.btn:active{transform:none}}
+
+/* ---------- painel do Anderson: versão limpa ----------
+   Ferramenta de controle, não papel: sem pauta, carimbo nem margem. Cor só onde pede ação (atraso, reporte). */
+.adm{border-radius:8px;border-color:var(--line)}
+.adm .mark{display:none}
+.adm-top{padding:16px 20px}
+.adm-top .t b{font-size:17px}
+.adm .kpis{border-bottom:0;padding:4px 8px 0;gap:0}
+.adm .kpi{border-right:0;padding:12px}
+.adm .kpi .n{font-family:var(--f-body);font-size:26px;font-weight:600}
+.adm .subtabs{padding:6px 20px 0}
+.adm .subtabs button{font-weight:500}
+.adm .subtabs button[aria-selected="true"]{font-weight:600}
+.adm .subtabs .c{font-family:var(--f-body);background:none;color:var(--muted);padding:0;margin-left:5px}
+.adm .subtabs .c.warn{background:none;color:var(--warn);font-weight:600}
+.adm .pane{padding:4px 20px 20px}
+.adm th{font-family:var(--f-body);font-size:12.5px;font-weight:500;letter-spacing:0;text-transform:none;border-bottom:1px solid var(--line);padding:14px 10px 8px}
+.adm td{height:auto;padding:11px 10px;vertical-align:middle;border-bottom:1px solid #edf0f5}
+.adm td.mono{font-family:var(--f-body);font-size:14px}
+.adm .stamp{transform:none;border:0;padding:0;color:inherit;font-weight:400;font-family:var(--f-body);font-size:14px;line-height:inherit}
+.adm .pill{font-family:var(--f-body);font-size:13px;font-weight:500;letter-spacing:0;text-transform:none;background:none;padding:0;color:var(--muted)}
+.adm .pill:not(.ok):not(.info){color:var(--warn);font-weight:600}
+.adm .pill:not(.ok):not(.info)::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:6px;vertical-align:1px}
+.adm .pill.info{color:var(--brand)}
+.adm .btn.sm{border:1px solid var(--line);border-radius:6px;font-weight:500;font-size:13.5px;min-height:34px;color:var(--ink)}
+.adm .btn.sm.brand{border-color:var(--brand);color:var(--brand-ink)}
+.adm .rep{border-radius:8px;padding:14px 16px;border-color:var(--line)}
+.adm .rep::before{display:none}
+.adm .ruled{background-image:none;line-height:1.45}
+.adm .rep .who{font-family:var(--f-body)}
+.adm .lbl{font-family:var(--f-body);text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--ink)}
+.adm .count{font-family:var(--f-body)}
+.adm .in{border:1px solid var(--line);border-radius:6px;padding:8px 10px;height:40px}
+.adm .adm-search{border-bottom:0}
+.adm .adm-search .in{border:1px solid var(--line)!important;padding-left:10px}
+.adm tr.new td{background:#eef3fc}
+.adm-top .who span{font-family:var(--f-body)!important}
 </style>
 
 </head>
