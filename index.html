@@ -187,6 +187,22 @@ tr.new td{background:var(--soft)}
 .adm .adm-search .in{border:1px solid var(--line)!important;padding-left:10px}
 .adm tr.new td{background:#eef3fc}
 .adm-top .who span{font-family:var(--f-body)!important}
+/* ---------- modos separados: leitor.html e gestao.html (window.MODO) ---------- */
+body[data-mode] .tabs,body[data-mode] .colh{display:none!important}
+body[data-mode="leitor"] .cols .col-adm,body[data-mode="leitor"] .notes{display:none!important}
+body[data-mode="gestao"] .cols .col-leitor,body[data-mode="gestao"] #first{display:none!important}
+body[data-mode="leitor"] .cols{grid-template-columns:minmax(0,1fr)}
+body[data-mode="gestao"] .cols{grid-template-columns:minmax(0,1fr)}
+body[data-mode="leitor"] .page{max-width:560px}
+@media (max-width:560px){
+  body[data-mode="leitor"] .page{padding:0;gap:0}
+  body[data-mode="leitor"] .intro{padding:14px 16px 4px}
+  body[data-mode="leitor"] .intro h1{font-size:18px}
+  body[data-mode="leitor"] .intro p{font-size:13.5px}
+  body[data-mode="leitor"] .phone{border:0;border-radius:0;height:auto;box-shadow:none;max-width:none;background:none}
+  body[data-mode="leitor"] .app{height:auto;overflow:visible}
+  body[data-mode="leitor"] .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+}
 </style>
 
 </head>
@@ -362,7 +378,7 @@ app.addEventListener('click',e=>{
     return renderApp()}
   if(a==='glogout'){S.gacc=null;S.picker=true;S.first=true;return go('me')}
   if(a==='logout'){S.first=true;S.gacc=null;S.picker=false;return go('me')}
-  if(a==='open-adm'){document.getElementById('cols').dataset.show='anderson';document.querySelectorAll('.tabs [data-show]').forEach(x=>x.setAttribute('aria-selected',x.dataset.show==='anderson'));A.tab='com';renderAdm();document.querySelector('.col-adm').scrollIntoView({behavior:'smooth',block:'start'});return}
+  if(a==='open-adm'){if(window.MODO==='leitor'){location.href='gestao.html';return}document.getElementById('cols').dataset.show='anderson';document.querySelectorAll('.tabs [data-show]').forEach(x=>x.setAttribute('aria-selected',x.dataset.show==='anderson'));A.tab='com';renderAdm();document.querySelector('.col-adm').scrollIntoView({behavior:'smooth',block:'start'});return}
   if(a==='cal'){S.cal=!S.cal;return renderApp(true)}
   if(a==='save-me'){
     const g=S.first?S.gacc:ME,nome=g.nome,email=g.email,cel=document.getElementById('f-cel').value.trim();
@@ -497,6 +513,10 @@ adm.addEventListener('click',e=>{
 // abas no celular/tela estreita
 document.querySelectorAll('.tabs [data-show]').forEach(b=>b.addEventListener('click',()=>{document.getElementById('cols').dataset.show=b.dataset.show;document.querySelectorAll('.tabs [data-show]').forEach(x=>x.setAttribute('aria-selected',x===b))}));
 document.getElementById('first').addEventListener('click',()=>{S.first=true;S.gacc=null;S.picker=false;S.err='';S.view='me';document.getElementById('cols').dataset.show='leitor';document.querySelectorAll('.tabs [data-show]').forEach(x=>x.setAttribute('aria-selected',x.dataset.show==='leitor'));renderApp();document.querySelector('.col-leitor').scrollIntoView({behavior:'smooth',block:'start'})});
+const MODO=window.MODO||'';
+if(MODO){document.body.dataset.mode=MODO;const p=document.querySelector('.intro p');
+  p.textContent=MODO==='leitor'?'Mockup da página de quem pega o livro. Nomes e empréstimos são de exemplo; os 1.590 livros são os reais. Nada é enviado.':'Mockup do painel de gestão do Anderson. Nomes e empréstimos são de exemplo; os 1.590 livros são os reais. Nada é salvo.';
+  document.querySelector('.intro h1').textContent=MODO==='leitor'?'Biblioteca CEAC · leitor':'Biblioteca CEAC · gestão';}
 renderApp();renderAdm();
 })();
 </script>

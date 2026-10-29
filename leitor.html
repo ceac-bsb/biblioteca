@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<script>window.MODO='leitor'</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#1d3f8f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='6' fill='%231d3f8f'/%3E%3Crect x='14' y='16' width='36' height='32' fill='%23fdfdfb'/%3E%3Cpath d='M18 26h28M18 33h28M18 40h18' stroke='%231d3f8f' stroke-width='3'/%3E%3C/svg%3E">
+<title>Biblioteca CEAC · Leitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Identidade "Ficha": ficha catalográfica de papel. Tinta azul, texto assentado nas linhas pautadas
+   (linha a cada 28px, texto com line-height 28px), prazo em carimbo.
+   Layout: duas abas no topo (Leitor · Anderson). Leitor = celular com a página; Anderson = painel largo.
+   Em tela grande, os dois lado a lado. Paleta única clara, de propósito: é papel. */
+:root{
+  --bg:#e9edf3; --surface:#fdfdfb; --ink:#13213f; --muted:#5a6683; --line:#d3dae6; --strong:#aab6cb; --rule:#cfd8e6; --margin:#e7a3a3;
+  --brand:#1d3f8f; --brand-ink:#ffffff; --soft:#dfe7f6; --warn:#9a3412; --warn-bg:#fde5d6; --ok:#1e6b4a; --ok-bg:#dcefe5; --info-bg:#e6ebf5;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --lh:28px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;margin:0}
+.page{max-width:1240px;margin:0 auto;padding-block:22px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+.intro{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.intro h1{font-size:24px;line-height:1.2;margin:0 0 4px;font-weight:600}
+.intro p{margin:0;color:var(--muted);max-width:68ch}
+.tabs{display:flex;gap:0;border:1.5px solid var(--brand);border-radius:3px;overflow:hidden;background:var(--surface)}
+.tabs button{font:inherit;font-weight:600;font-size:14.5px;border:0;background:none;color:var(--brand);padding:10px 16px;cursor:pointer;min-height:44px}
+.tabs button[aria-selected="true"]{background:var(--brand);color:var(--brand-ink)}
+.cols{display:grid;grid-template-columns:390px minmax(0,1fr);gap:28px;align-items:start}
+.cols[data-show="leitor"] .col-adm,.cols[data-show="anderson"] .col-leitor{display:none}
+@media (min-width:1100px){.cols .col-adm,.cols .col-leitor{display:block!important}.tabs{display:none}}
+@media (max-width:1099px){.cols{grid-template-columns:minmax(0,1fr)}}
+.colh{font-family:var(--f-mono);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+
+/* ---------- papel pautado: o texto senta na linha ---------- */
+.ruled{line-height:var(--lh);background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--lh) - 1px),var(--rule) calc(var(--lh) - 1px) var(--lh))}
+.ruled > *{margin:0}
+
+/* ---------- celular do leitor ---------- */
+.phone{width:100%;max-width:390px;margin:0 auto;height:780px;border-radius:34px;border:10px solid #111;background:#111;overflow:hidden;box-shadow:0 20px 50px -24px rgba(0,0,0,.5)}
+@media (max-width:440px){.phone{height:720px;border-width:6px;border-radius:26px}}
+.app{height:100%;overflow-y:auto;background:var(--bg);font-size:16px;scrollbar-width:none;position:relative}
+.app::-webkit-scrollbar{display:none}
+.aw{padding:16px 16px 24px;display:flex;flex-direction:column;gap:14px;min-height:100%}
+.top{display:flex;align-items:center;gap:12px;padding-top:6px}
+.mark{font-family:var(--f-mono);font-weight:600;font-size:15px;letter-spacing:.04em;color:var(--brand);border:2px solid var(--brand);padding:5px 7px;line-height:1}
+.top .t{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.top b{font-weight:600;font-size:16px}
+.top span{font-size:12.5px;color:var(--muted)}
+.me{margin-left:auto;font-size:12.5px;color:var(--muted);text-align:right;line-height:1.25}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;position:relative}
+.card.ficha{padding-left:28px}
+.card.ficha::before{content:"";position:absolute;left:18px;top:0;bottom:0;width:1.5px;background:var(--margin)}
+.lbl{font-family:var(--f-mono);font-size:11.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.h{font-weight:600;font-size:20px}
+.loan{display:flex;flex-direction:column;gap:8px}
+.loan + .loan{border-top:1.5px dashed var(--line);padding-top:12px}
+.loan .ruled b{font-weight:600;font-size:16.5px}
+.loan .ruled .m{font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.stamp{display:inline-block;transform:rotate(-3deg);border:2px solid currentColor;border-radius:4px;padding:0 6px;line-height:20px;color:var(--brand);font-weight:600;font-family:var(--f-mono);font-size:13px}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;line-height:18px;border-radius:2px;background:var(--warn-bg);color:var(--warn);white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.info{background:var(--info-bg);color:var(--brand)}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.btn{font-weight:600;font-size:15px;border:1.5px solid var(--strong);background:var(--surface);color:var(--ink);border-radius:2px;padding:10px 14px;min-height:46px}
+.btn.brand{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.sm{min-height:36px;padding:6px 10px;font-size:13.5px}
+.btn:active{transform:scale(.985)}
+.link{background:none;border:0;color:var(--brand);font-weight:600;font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:4px 0;align-self:flex-start}
+/* campo = uma linha da ficha, sem caixa */
+.in{font:inherit;font-size:17px;color:var(--ink);background:transparent;border:0;border-bottom:1.5px solid var(--strong);border-radius:0;padding:4px 2px;line-height:28px;height:38px;width:100%;min-width:0}
+.in:focus{border-bottom-color:var(--brand);outline:none;box-shadow:0 1.5px 0 var(--brand)}
+textarea.in{height:calc(var(--lh) * 3 + 2px);resize:none;border:0;padding:0 2px;line-height:var(--lh);background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--lh) - 1.5px),var(--strong) calc(var(--lh) - 1.5px) var(--lh));background-attachment:local;font-size:16px}
+textarea.in:focus{box-shadow:none;background-image:repeating-linear-gradient(to bottom,transparent 0 calc(var(--lh) - 1.5px),var(--brand) calc(var(--lh) - 1.5px) var(--lh))}
+.search{display:flex;align-items:center;gap:8px;border-bottom:1.5px solid var(--strong)}
+.search:focus-within{border-bottom-color:var(--brand)}
+.search svg{color:var(--muted);flex:none}
+.search .in{border:0;box-shadow:none}
+.results{display:flex;flex-direction:column}
+.res{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;text-align:left;font-size:15.5px;background:none;border:0;border-bottom:1px solid var(--rule);padding:8px 2px 2px;line-height:var(--lh);color:var(--ink);min-height:44px}
+.res mark{background:var(--soft);color:inherit;border-radius:2px}
+.res span{min-width:0}
+.res i{font-style:normal;color:var(--muted);flex:none}
+.res .pill{margin-bottom:5px}
+.count{font-size:12.5px;color:var(--muted);font-family:var(--f-mono)}
+.empty{font-size:14.5px;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+.chips{display:flex;flex-direction:column;gap:8px}
+.chip{display:flex;flex-direction:column;align-items:flex-start;gap:0;text-align:left;background:var(--surface);color:var(--ink);border:1.5px solid var(--strong);border-radius:2px;padding:10px 12px}
+.chip b{font-weight:600;font-size:15px}
+.chip small{color:var(--muted);font-size:13px}
+.chip[aria-pressed="true"]{border-color:var(--brand);background:var(--soft)}
+.seg{display:flex;flex-direction:column;gap:8px}
+.seg .chip{flex-direction:row;align-items:center;gap:10px}
+.dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--strong);flex:none}
+.chip[aria-pressed="true"] .dot{border-color:var(--brand);box-shadow:inset 0 0 0 4px var(--surface);background:var(--brand)}
+.field{display:flex;flex-direction:column;gap:2px;font-family:var(--f-mono);font-weight:500;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.field .opt{text-transform:none;letter-spacing:0;font-family:var(--f-body)}
+.err{color:var(--warn);font-size:14px;font-weight:600;margin:0}
+.phone{position:relative}
+.toast{position:absolute;left:16px;right:16px;bottom:16px;z-index:2;background:var(--ink);color:var(--surface);border-radius:3px;padding:10px 14px;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.foot{margin-top:auto;font-size:12px;color:var(--muted);text-align:center;font-family:var(--f-mono)}
+
+/* ---------- painel do Anderson ---------- */
+.adm{background:var(--surface);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.adm-top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.adm-top .t b{display:block;font-weight:600;font-size:16px}
+.adm-top .t span{font-size:12.5px;color:var(--muted)}
+.adm-top .who{margin-left:auto;font-size:13px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--line)}
+@media (max-width:640px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{padding:14px 18px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.kpi:last-child{border-right:0}
+.kpi .n{font-family:var(--f-mono);font-size:28px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .n.warn{color:var(--warn)}
+.kpi span{font-size:13px;color:var(--muted)}
+.subtabs{display:flex;gap:4px;padding:10px 14px 0;border-bottom:1px solid var(--line);overflow-x:auto}
+.subtabs button{font-weight:600;font-size:14px;border:0;background:none;color:var(--muted);padding:8px 10px 10px;border-bottom:2.5px solid transparent;white-space:nowrap}
+.subtabs button[aria-selected="true"]{color:var(--brand);border-bottom-color:var(--brand)}
+.subtabs .c{font-family:var(--f-mono);font-size:11.5px;background:var(--soft);color:var(--brand);border-radius:2px;padding:1px 6px;margin-left:4px}
+.subtabs .c.warn{background:var(--warn-bg);color:var(--warn)}
+.pane{padding:6px 18px 18px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:700px}
+td:nth-child(2){white-space:nowrap}
+th{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left;padding:12px 10px 6px;border-bottom:1.5px solid var(--strong)}
+td{padding:0 10px;height:44px;border-bottom:1px solid var(--rule);vertical-align:bottom;padding-bottom:8px}
+td.mono{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+td .sub{display:block;font-size:12px;color:var(--muted);line-height:1.2}
+td b{font-weight:600}
+tr.new td{background:var(--soft)}
+.acts{display:flex;gap:6px;justify-content:flex-end;white-space:nowrap}
+.reps{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding-top:12px}
+.rep{border:1px solid var(--line);border-radius:3px;padding:12px 14px 12px 26px;position:relative;display:flex;flex-direction:column;gap:6px;background:var(--surface)}
+.rep::before{content:"";position:absolute;left:16px;top:0;bottom:0;width:1.5px;background:var(--margin)}
+.rep .ruled b{font-weight:600}
+.rep .ruled p{font-size:14px}
+.rep .who{font-size:12.5px;color:var(--muted);font-family:var(--f-mono)}
+.rep.done{opacity:.5}
+.hint{font-size:13px;color:var(--muted);margin:12px 0 0;max-width:80ch}
+.adm-search{display:flex;align-items:center;gap:8px;border-bottom:1.5px solid var(--strong);max-width:420px;margin-top:12px}
+.notes{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:13.5px;max-width:90ch;border-top:1px solid var(--line);padding-top:14px}
+.notes b{color:var(--ink);font-weight:600}
+@media (prefers-reduced-motion:reduce){.btn:active{transform:none}}
+
+/* ---------- painel do Anderson: versão limpa ----------
+   Ferramenta de controle, não papel: sem pauta, carimbo nem margem. Cor só onde pede ação (atraso, reporte). */
+.adm{border-radius:8px;border-color:var(--line)}
+.adm .mark{display:none}
+.adm-top{padding:16px 20px}
+.adm-top .t b{font-size:17px}
+.adm .kpis{border-bottom:0;padding:4px 8px 0;gap:0}
+.adm .kpi{border-right:0;padding:12px}
+.adm .kpi .n{font-family:var(--f-body);font-size:26px;font-weight:600}
+.adm .subtabs{padding:6px 20px 0}
+.adm .subtabs button{font-weight:500}
+.adm .subtabs button[aria-selected="true"]{font-weight:600}
+.adm .subtabs .c{font-family:var(--f-body);background:none;color:var(--muted);padding:0;margin-left:5px}
+.adm .subtabs .c.warn{background:none;color:var(--warn);font-weight:600}
+.adm .pane{padding:4px 20px 20px}
+.adm th{font-family:var(--f-body);font-size:12.5px;font-weight:500;letter-spacing:0;text-transform:none;border-bottom:1px solid var(--line);padding:14px 10px 8px}
+.adm td{height:auto;padding:11px 10px;vertical-align:middle;border-bottom:1px solid #edf0f5}
+.adm td.mono{font-family:var(--f-body);font-size:14px}
+.adm .stamp{transform:none;border:0;padding:0;color:inherit;font-weight:400;font-family:var(--f-body);font-size:14px;line-height:inherit}
+.adm .pill{font-family:var(--f-body);font-size:13px;font-weight:500;letter-spacing:0;text-transform:none;background:none;padding:0;color:var(--muted)}
+.adm .pill:not(.ok):not(.info){color:var(--warn);font-weight:600}
+.adm .pill:not(.ok):not(.info)::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:6px;vertical-align:1px}
+.adm .pill.info{color:var(--brand)}
+.adm .btn.sm{border:1px solid var(--line);border-radius:6px;font-weight:500;font-size:13.5px;min-height:34px;color:var(--ink)}
+.adm .btn.sm.brand{border-color:var(--brand);color:var(--brand-ink)}
+.adm .rep{border-radius:8px;padding:14px 16px;border-color:var(--line)}
+.adm .rep::before{display:none}
+.adm .ruled{background-image:none;line-height:1.45}
+.adm .rep .who{font-family:var(--f-body)}
+.adm .lbl{font-family:var(--f-body);text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--ink)}
+.adm .count{font-family:var(--f-body)}
+.adm .in{border:1px solid var(--line);border-radius:6px;padding:8px 10px;height:40px}
+.adm .adm-search{border-bottom:0}
+.adm .adm-search .in{border:1px solid var(--line)!important;padding-left:10px}
+.adm tr.new td{background:#eef3fc}
+.adm-top .who span{font-family:var(--f-body)!important}
+/* ---------- modos separados: leitor.html e gestao.html (window.MODO) ---------- */
+body[data-mode] .tabs,body[data-mode] .colh{display:none!important}
+body[data-mode="leitor"] .cols .col-adm,body[data-mode="leitor"] .notes{display:none!important}
+body[data-mode="gestao"] .cols .col-leitor,body[data-mode="gestao"] #first{display:none!important}
+body[data-mode="leitor"] .cols{grid-template-columns:minmax(0,1fr)}
+body[data-mode="gestao"] .cols{grid-template-columns:minmax(0,1fr)}
+body[data-mode="leitor"] .page{max-width:560px}
+@media (max-width:560px){
+  body[data-mode="leitor"] .page{padding:0;gap:0}
+  body[data-mode="leitor"] .intro{padding:14px 16px 4px}
+  body[data-mode="leitor"] .intro h1{font-size:18px}
+  body[data-mode="leitor"] .intro p{font-size:13.5px}
+  body[data-mode="leitor"] .phone{border:0;border-radius:0;height:auto;box-shadow:none;max-width:none;background:none}
+  body[data-mode="leitor"] .app{height:auto;overflow:visible}
+  body[data-mode="leitor"] .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+}
+</style>
+
+</head>
+<body>
+<div class="page">
+  <div class="intro">
+    <div><h1>Biblioteca CEAC</h1><p>Mockup pra validar com o Anderson. À esquerda, a página de quem pega o livro; à direita, o painel dele. Tudo que você faz como leitor aparece no painel na hora. Nomes e empréstimos são de exemplo; os 1.590 livros são os reais.</p></div>
+    <button class="btn" id="first" style="min-height:44px">Ver o primeiro acesso</button>
+    <div class="tabs" role="tablist"><button role="tab" id="t-leitor" aria-selected="true" data-show="leitor">Leitor</button><button role="tab" id="t-anderson" aria-selected="false" data-show="anderson">Anderson</button></div>
+  </div>
+  <div class="cols" id="cols" data-show="leitor">
+    <section class="col-leitor"><p class="colh">Quem pega o livro · celular</p><div class="phone"><div class="app" id="app"></div><div class="toast" id="toast" role="status" hidden></div></div></section>
+    <section class="col-adm"><p class="colh">Anderson · painel da biblioteca</p><div class="adm" id="adm"></div>
+      <div class="notes" style="margin-top:16px">
+        <div><b>Por trás:</b> empréstimo e devolução continuam indo pro formulário e pra planilha do Anderson, com os mesmos e-mails e recibos. Ele não precisa mudar nada do que já usa.</div>
+        <div><b>Login:</b> todo mundo entra com a conta Google. Só o e-mail do Anderson abre este painel; os outros veem a página de leitor.</div>
+        <div><b>Lembrete:</b> ao pegar o livro, o leitor deixa marcado "Lembrete na minha agenda" e o evento "Devolver livro: …" entra na agenda Google dele no dia do prazo.</div>
+        <div><b>Pro painel ver tudo</b>, ele compartilha a planilha das respostas. Os reportes ganham um formulário próprio.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+const LIVROS=["1808","1822","1889","1984","Suma Teológica: 1ª Parte, Questões 90-105","?Qué es el embrión humano?","?Qué es filosofía?","?Somos todos enfermos mentales?","100 Questões comentadas em Gastroentereologia","1000 Perguntas Marketing","1001 filmes para ver antes de morrer","154 Sonetos","1565 - Enquanto o Brasil Nascia","2001 - Uma Odisseia no Espaço","3 Série Literária - Contos","500 Mathematical Challanges","70 Histórinhas","7eori4 Do2 Número5","A 25ª Hora","A 3ª Guerra - o mais completo relato da guerra no Oriente Médio","A Abadia de Northanger","A Águia Pousou","A Aldeia de Stiepantchikov e seus Habitantes","A arte da guerra","A arte da palavra - como criar um estilo pessoal na comunicação escrita","A Arte da Política - A história que vivi","A Arte Sacra","A Árvore da Vida: História de Santa Helena e a descoberta da Santa Cruz*","A bagagem do viajante","A Batalha","A batalha da opinião pública","A Boa Terra","A Bolsa e a Vida*","A Cabra Vadia: Novas Confissões","A Canção dos Nibelungos*","A Cartomante - e outros contos","A Casa Torta","A Chave Estrela","A Cidade Antiga","A Cidade de Deus - Contra Pagãos","A Cidade de Deus - Parte I","A Cidade do Sol","A Cidadela","A ciência e a hipótese","A ciência médica de House","A Condição Humana","A confissão sacramental","A Construção do Argumento","A Crise do Mundo Moderno","A Cultura Brasileira II - Introdução ao estudo da cultura do Brasil","A Dama do Cachorrinho e outros contos","A democracia na américa - Leis e Costumes - Livro 1","A democracia na américa - Sentimentos e Opiniões","A Descoberta do Outro","A Ditadura Derrotada","A Ditadura Encurralada","A Ditadura Envergonhada","A Ditadura Escancarada","A Divina Comédia","A Divina Comédia - Paraíso","A Divina Comédia - Purgatório","A elegância do ouriço","A Época de Roosevelt (1932-1945)","A Epopéia Brasileira ou: para ler Guimarães Rosa","A Era das Contradições","A Era de T.S. Eliot - a imaginação moral do século XX","A Escalada","A Escrava Isaura","À Espera do Tempo - Filmando com Kurosawa*","A estepe: História de uma viagem","A Estrada","A Eucaristia","A Eucaristia - Pão e vida Eterna","A Expedição Kon-Tiki","A Experiência de Ler","A explosão do jornalismo - Das mídias de massa à massa de mídias","A Extravagância do Morto","A Faca de Dois Gumes","A Família","A Família - Uma Perspectiva Cristã","A Fogueira das Vaidades*","A Formação Intelectual, Segundo Gilberto de Tornai","A Fórmula do Texto","A Fúria de Maigret*","A Gnose em Questão","A Grande Ruptura","A Guerra Aeronaval no Atlântico - 1939-1945","A Guerra de Trincheiras - França e Flanders, 1914-18","A Guerra do Futebol","A Guerra do Paraguai","A Handful of Dust","A Herdeira*","A História da Luftwaffe","A História e suas epidemias - a convivência do homem com os microorganismos","A Hora da Estrela","A Igreja Católica","A ilha dos daltônicos e a ilhas das cicadáceas","A Ilha Misteriosa","A Incrível Viagem de Shackleton","A Incrível Viagem de Shackleton*","A Inglesa Deslumbrada","A Inocência do Padre Brown","A Lei de Murphy - e outros motivos por que tudo dá errado!","A Leoa Branca","A Liberdade de Escolher","A Língua Exilada","A Linguagem de Deus: Um cientista apresenta eviências de que Ele existe","A louca de Maigret","A Luneta Mágica*","A Luta pelo Direito","A Mansão Hollow","A Mão e a Luva","A Megera Domada; As Alegres Comadres de Windsor","A Menina que Não Sabia Ler","A Menina que Roubava Livros","A Meta - um processo de melhoria contínua","A Metamorfose","A Montanha Mágica","A Montanha Partida (o mistério da expedição)*","A Moreninha*","A Morgadinha dos Canaviais*","A Morte da Sra. McGinty","A Morte de Ivan Ilitch","A Morte e a Morte de Quincas Berro Dágua","A Morte nas Nuvens","A Morte Nas Nuvens","A Nação Mercantilista","A Nau dos Insensatos","A Nomenklatura: Como Vivem as Classes Privilegiadas na União Soviética","A Nova Contabilidade Social - uma introdução à macroeconomia","A Obsessão Antiamericana: Causas e Inconseqüências","A Onda que se Ergueu no Mar","A Pátria em Chuteiras*","A Perspectiva Cristã","A Pior Viagem do Mundo","A Política","A Promessa","A Questão do Aborto - Aspectos Jurídicos Fundamentais","A Rebelião das Massas","A Rêde Dourada - Vida e Época de Santo Inácio de Loyola","A relação entre a Igreja e o Estado","A República","A República - Parte I","A República - Parte II","A Revolução dos Bichos","A Sabedoria do Padre Brown","A Sangue Frio","A sememte da vitória","A Senhora","A senhoria","A Sociedade de Corte","A Sociedade Militar - de 1815 até nossos dias","A Tabela Periódica","A Terceira Moça","A Testemunha Ocular do Crime","A Tolerância","A Trégua","A Trilogia de Nova York","A Vantagem Competitiva das Nações","A Viagem do Descobrimento","A Vida Cotidiana - Roma no Apogeu do Império","A vida cotidiana dos primeiros cristãos (95 - 197)","A Vida de Disraeli","A vida de Santo Agostinho","A Vida Intelectual","A vingança de Manon","A Volta à Velha Mansão","A Volta ao Mundo em 80 Dias","A Volta do Parafuso","Aborto do direito comparado: uma reflexão crítica","Abril Despedaçado","Aconteceu Virou História","Administração da Produção e de Operações","Administração de Produção e de Operações","Afrika Corps","Agamêmnon","Agostinho de Hipona - a razão e a fé","Agosto de 1914","Agustin de Hipona","Alexandre O Grande","Álgebra Exterior","Álgebra Linear","Algoritmos","Algoritmos em Linguagem C","Alice - Edição Comentada","Alice no País das Maravilhas*","Alma do Mundo","Almas Mortas","Alocuções e Artigos","Alterações do Equilíbrio Hídrico, Eletrolítico e Ácido-Base","AMBr 50 Ans=os - Desde 1959 fazendo história em Brasília","América Latina no labirinto global: Economia, Política e Segurança","American Headaway 3 - Student Book","American Headaway 3 - Workbook","American Poetry and Prose - Part I","Américas Compartilhadas","Amor de Perdição","Ana Karênina","Anais do IV Riociência","Análise de Fourier e Equações Diferenciais Parciais","Análise Macroeconômica","Análise Real - Volume 1","Análise Real - Volume 2","Anecdotas y virtudes","Anedotas do Destino","Anestesia: Volume 1","Anestesia: Volume 2","Annapurna","Ante Dios y en el mundo - apuntes para una teología del trabajo","Antenna Theory","Antes das Primeiras Estórias","Antígona","Antígona - Ájax - Rei Édipo","Antologia da Poesida Brasileira - Romantismo","Antologia Escolar de Crõnicas*","Antropología Filosófica: Una introducción a la FIlosofía del Hombre","Antropología Teológica","Anuario Filosofico - Volumen XXVII/1","Ao Farol (Bilíngue)","Apologia de la docta ignorancia/La ignorada sabiduría","Apologia Pro Vita Sua","Apostar Por La Muerte","Aristoteles no século XX","Arte de viver","Arte Retórica Arte Poética","As Aventuras de Robin Hood","As Aventuras de Sherlock Holmes","As aventuras de Tom Sawyer","As Aventuras de Xisto","As Aventuras do Sr. Pickwick","As Bases Farmacológicas de Terapêutica","As Brasas","As Chaves do Reino","As Cidades dos Sonhos: desenvolvimento urbano em Goiás","As Cidades Invisíveis","As Crônicas de Nárnia","As Fronteiras da Técnica","As Grandes Amizades","As Grandes Equações","As Grandes Esperanças","As Mil e Uma Noites","As Raízes Medievais do Pensamento Moderno","As razões de aristóteles","As Vinhas da Ira","As vinhas da Ira","Ascensão e Queda do Terceiro Reich: Volume I","Ascensão e Queda do Terceiro Reich: Volume II","Ascensão e Queda do Terceiro Reich: Volume III","Ascensão e Queda do Terceiro Reich: Volume IV","Assassinato na Casa do Pastor","Assassinato no Beco","Assassinos Sem Rosto","Assim Declinou o Sol - História do Imperador Juliano, o Apóstota","Atalho Sem Fim*","Até os confins da Terra - os apóstolos de Jesus abrem seu Caminho da História","Átila - O Flagelo do Oriente","atirador de facas","Atlas da História do Mundo","Atlas de Anatomia Humana","Atlas de Anatomía Humana - Tomo Primeiro","Atlas de Anatomía Humana - Tomo Segundo","Atlas de Anatomía Humana - Tomo Terceiro","Atlas Geográfico Mundial","Atlas of European History - 3000 years of history in maps","Atravessar o Limiar da Esperança","Auditoria","Auto da Compadecida","AutoCAD 2008 - da modelagem à renderização em 3D","Aventuras de Huck","Aventuras de Sherlock Holmes","Aves de Rapina","Babbitt","Balé do Pato e Outras Crônicas*","Bandeirantes e Pioneiros","Bartolomé Lloréns - Una sed de eternidades","Beethoven - a música e a vida","Bento XVI Adversus Haereses","Bilhetinhos de Jânio","Bio - Volume Único","Bioética - consideraciones filosóficas-teológicas sobre un tema actual","Boa Ventura! A corrida do ouro no Brasil","Bolívar I","Bolívar II","Botânica Organograifa, Quadros Sinóticos Ilustrados de Fanerógramos","branca como o leite, vermelho como o sangue","Brasil: De Castelo a Tancredo","Brasil: de Getúlio a Castelo","Brasil: De Getúlio Vargas a Castelo Branco","Brasil: Uma História","Breve Hirtória de la Filosofía","Breve Historia de la Cultura","Breve Historia del Concilio Vaticano II","Breve História do mundo","Breviário do Coronel Francisco Heráclio do Rêgo*","Brideshead Revisited","Building Intelligent Interactive Tutors","Business English: A Pratical Approach","Cai o Pano - o último caso de Poirot","Cálculo","Cálculo - funções de uma variável","Cálculo - funções de várias variáveis","Cálculo - um curso moderno e suas aplicações","Cálculo - Volume 1","Cálculo - volume 2","Cálculo 1 - funções de uma variável","Cálculo 2 - funções de uma variável","Cálculo 3","Cálculo 3 - funções de várias variáveis","Cálculo Com Geometria Analítica 1","Cálculo das funções de uma variável","Cálculo Diferencial e Integral - Volume I","Cálculo em Uma Variável Complexa","Cálculo Numérico Computacional","Campanhas Jornalísticas - 6","Campanhas Presidenciais - 7","Canções da Inocência e Canções da Experiência","Cannae e Nossas Batalhas","Cântico de Natal","Capitães do Brasil","Capitalismo Americano - sua promessa e realizações","Capitalismo, Catolicismo, Protestantismo","Captação de Diferentes Recursos Para Organizações Sem Fins Lucrativos","Carmem","Carpinteiros, levantem bem alto a cumeeira & Seymor, uma apresentação","Carta a um amigo judeu: A história simples do amigo judeu de Karol Wojtyla","Cartas a um Jovem Advogado","Cartas a um jovem poeta, a canção de amor e de morre do porta-estandarte Cristóvão Rilke","Cartas a um Jovem Político","Cartas de Inglaterra - 4","Cartas de Inglaterra - 5","Casa-Grande e Senzala","Catecisco Del Santo Concílio de Trento","Catecismo da Igreja Católica","Categorias","Cem Dias Entre o Céu e o Mar","Cem Gramas de Centeio","Cenas brasileiras","Chapadão do Bugre","Chega de Saudade - a história e as histórias da Bossa Nova","Chiaro! corso di italiano A1 - Libro dello studente ed eserciziario","Cidadãos: uma crônica da revolução francesa","Cidadela","Cidades da Planície","Ciência da Computação - uma visão abrangente","Ciência dos Computadores - uma abordagem algorítmica","Cinco Minutos - A Viuvinha","Cinco Semanas em um Balão","Cipreste Triste","Circuitos Polifásicos","Cirurgia do Trauma","Cisnes Selvagens - as três filhas da China","Clara dos Anjos","Clarão na Serra*","Claridade*","Claro Escuro","Claves del nominalismo y del idealismo","Clímicas de Terapia Intensiva - Choque Circulatório","Clínica Médica da América do Norte - Artrite Reumatóide","Clínica Médica da América do Norte - Distúrbios Endócrinos","Clínica Médica da América do Norte - Doenças Gastrointestinais e Hepáticas","Clínica Médica da América do Norte - O Arsenal Terapêutico do Circurgião","Clínica Médica da América do Norte - Progressos Recentes em doença cardiovascular","Clinical Anesthesiology","Codex Iuris Canonici","Codigo de Derecho Canonico I","Código de Derecho Canonico II - Legislación posconciliar","Código de Direito Canônico","Coisas que niguém sabe","Coletânea - Fé e Razão, Metafísica, Filosofia Cristã e Formação Presbiterial","Colheita de Frutos","Comandos do Deserto - História Ilustrada da 2º Guerra Mundial","Combinatória, Matrizes e Determinantes - Noções de Matemática","Comentários à Legislação Das Sociedades Cooperativas - II","Commanders - History's greatest military leaders","Communication Systems","Como Desenvolver o Potencial Criador","Como Era Verde o Meu Vale","Como Fazer Investimentos","Como formase en etica atraves de la literatura - analisis estetico de obras literarias","Como me libertei do alcoolismo","Como Memorizar a Gramática","Cómo Mirar un Cuadro","Como se Faz Uma Tese","Cómo Solucionar Los Problemas Familiares","Como Tomar Decisiones","Como um romance*","Compêndio da Doutrina Cristã","Comunicação e Marketing: Fazendo a Diferença no Dia-a-Dia de Organizações da Sociedade Civil","Comunicação em Prosa Moderna","Comunicação Integrada de Marketing","Comunio - Fé, Cultura e Imaginário","Conciencia y afectividad (Aristóteles, Nietzche, Freud)","Concílio Vaticano II: 40 anos da Lumen Gentium","Conhece-te a ti mesmo - Excelência Humana e Ética","Construir o Homem e o Mundo","Contabilidade Social","Continued Fractions","Contos","Contos Brasileiros Contemporâneos*","Contos Consagrados","Contos de Aprendiz*","Contos de Fantasmas","Contos e Novelas","Contos Fantásticos do Século XIX Escolhidos Por Italo Calvino","Contos Inacabados de Númenor e da Terra Média","Contos Selecionados","Contra Toda a Esperança: As prisões políticas de Fidel Castro","Contra um mundo melhor - Ensaios do Afeto","Controle Estatístico de Qualidade","Conversaciones com Monseñor Escrivá de Balaguer","Convertidos do Século XX","Convite Para um Homicídio","Coração das Trevas","Coriolano (Tragédia)","Corrientes Del Pensamiento Histórico","Creating and Animating the Virtual World","Creio em Deus","Crime and Punishment","Crime e Castigo","Cristianismo e ocidente","Cristianismo Puro e Simples","Crônicas Completas da Manchete Esportiva 55-59: O Berro Impresso das Manchetes","Crônicas e Contos","Cronistas do Estadão","Cruz e Sousa: Poesias Completas","Cruz e Souza - Seleção","Cruzada na Europa","Curso Básico de Ética Cristiana","Curso de Análise - Volume 2","Curso de Eletrônica","Curso de Gramática Aplicada aos Textos","Curso de Mecânica: Dinâmica","Curvas Algébricas Planas","Da amizade","Da Terra à Lua","Das virtudes militares","David Copperfield","De Notícias e Não Notícias Faz-se a Crônica*","Defensa de la filosofia","Democracia, Liberdade, Igualdade (Os Três Caminhos)","Dentro de Cinco Horas Veré a Jesús","Der Moderne Staat: Wie Funktioniert Das?","Desenho Geométrico Plano 1","Desenho Geométrico Plano 2 - I","Desenho Geométrico Plano 2 - II","Desenvolvimento Como Liberdade","Deu no New York Times","Deus Existe?","Deus Pai","Deuses Túmulos e Sábios","Deutsch als Fremdsprache - Dialogische Übungen","Deutsch als Fremdsprache - Strukturübungen und Tests","Deutsch als Fremdsprache 1A","Dez Anos - Crônicas","Diálogos: Mênon, Banquete, Fedro","Diário de um Pároco de Aldeia","Dicionário Espanhol - Português / Português - Espanhol","Dicionário Latino-Português","Dicionário Lula - Um presidente exposto por suas próprias falas","Dicionário Oboé de Finanças","Dicionário Oxford Escolar para estudantes brasileiros de inglês","Dicionário Prático Língua Portuguesa","Dicionário Terminológico de Jean Piaget","Dicta & Contradicta - 01","Dicta & Contradicta - 02","Dicta & Contradicta - 03","Dicta & Contradicta - 05","Dicta & Contradicta - 08","Digital Spectral Analysis","Dinâmica","Dios en el banquillo*","Dios Uno y Trino","Direitos do Paciente","Diretrizes do pensamento filosófico","Discursos sobre la fe","Discursos, Orações e Conferências - 1","Discursos, Orações e Conferências - 2","Discursos, Orações e Conferências - 3","Dispositivos Eletrônicos e Teoria de Circuitos","Divórcio em Buda*","Do Sublime","Doctrina Social de la Iglesia","Dois Amores - Duas Cidades","Dom Casmurro","Dom Quixote","Don Camillo e i Giovani D'oggi","Don Camilo e o Seu Rebanho","Don Camilo e Seu Pequeno Mundo","Dor","Dôra, Doralina","Dos Delitos e Das Penas","Dresden Today","Duce! Ascensão e Queda de Benito Mussolini","E a Porteira Bateu!","É Fácil Matar","Ébano - minha vida na África","Economia","Édipo Rei","Edith Stein - Hija de Israel y de la Iglesia","EDP Um Curso de Graduação","Educar - uma difícil tarefa","El aborto - 100 cuestiones y respuestas","El Amor e la Sabiduria","El Ángel Del Infierno","El bien","El Caballo Rojo","El Capital","El conocimento habitual de los primeros principios","El desafío de la racionalidad","El Diablo Propone un Brindis","El Gran Divorcio*","El grand divorcio - Un sueño","El itinerario juridico del Opus Dei: historia y defensa de un carisma","El Laberinto Sentimental","El labirinto sentimental","El marxismo: Visión crítica","El misterio de Jesucristo","El Misterio de la Creación","El misterio de la voluntad perdida","El mundo que viveremos - 25 años de los congresos UNIV","El pensamiento ingenioso en Baltasar Gracián","El personalismo","El princípio","El problema del dolor*","El sosiego - una filosofia de vida","El Tomismo: Introducción a la filosofia de Santo Tomás de Aquino","El último día de Hitler","El Valor de la Libertad","El valor de los defectos ajenos","Elaboração de Projetos e Propostas Para Organizações da Sociedade Civil","Elementary Algebra","Elementos de Eletrônica Digital","Elementos de Filosofia","Elementos de Filosofia Cristiana","Eletrônica - Volume 1","Eletrônica - Volume 2","Eletrônica Digital","Elite da Tropa","Elite da Tropa 2","Elogio de la intolerancia","Em Busca de Sentido","Em que Creem os que Não Creem?","Em que crêem os que não crêem?","Emma","Eneida","Engana-se","Engenharia de Software e Sistemas de Informação","Engineering Electronics","English Grammar in Use","Entender El mundo de Hoy","Entre lobos y autómatas - la causa del hombre","Enxaqueca","Epidemiologia Clínica: Elementos Essenciais","Epidemiologia Teoria e Prática","Equações Diferenciais Aplicadas","Equações Diferenciais Ordinárias","Es Cristo que Pasa","Esaú e Jacó","Escolhidos em Cristo para ser Santos - Volume I","Escritos de Política","Escritos doctrinales","Espumas Flutuantes","Esse Ofício do Verso","Essential Dictionary for Learners of English","Estas Estórias","Estatística","Estatística Básica","Estatística Básica Simplificada","Estatística Elementar","Estatística Multivariada Aplicada à Administração","Estatística Para Economistas","Estórias da Casa Velha da Ponte","Estratégia Naval Brasileira","Estruturas de Dados","Estruturas de Dados Usando C","Estruturas de Mercado em Oligopólio","Estudos de História da Cultura Clássica - Volume 1","Etica","Ética a Nicômaco","Ética en el Gobierno de la Empresa","Ética na Virada do Século","Ética social","Ética: questões fundamentais","Eugénie Grandet","Éutifron, Críton, Apologia de Sócrates","Exército Brasileiro - Imagens","Fahrenheit 451","Família e Coronelismo no Brasil: uma história de poder","Fantasmas do Everest - Em Busca de Mallory e Irvine","Fausto","Fausto - primeira parte","Fausto - segunda parte","Feitas para Durar: Práticas bem-sucedidas de empresas visionárias","Felicidad y Benevolencia","Fenomenologia, Morte e Incompletude","Fernando III - Rey de Castillay León","Fernão de Magalhães","Fiéis e Leigos da Igreja","Filosofia da Natureza","Filosofia de la Historia","Filosofia de la Naturaleza","Filosofia e Linguagem Comum","Filosofia, Educação e Arte","Física 1","Física 2","Física 3","Física 4","Física Fundamentos e Aplicações - Vol. 2","Foco - a atenção e Seu papel fundamental para o sucesso","Fogo no Céu","Fora de Controle","Formação Econômica do Brasil","Fórmula 1 - Sinal Verde","Forrest Gump","Forte de Coimbra - História e Tradição","França - 1940","Français Portugais Português Francês","Franny e Zooey","Funções de Uma Variável Complexa","Fundamentos da Biologia Moderna","Fundamentos de Antropologia: Um Ideal de Excelência Humana","Fundamentos de Antropologia: Un ideal de la excelencia humana","Fundamentos de Arquitetura de Computadores","Fundamentos de Engenharia e Ciência dos Materiais","Fundamentos de Filosofia","Fundamentos de Filosofia - I","Fundamentos de Física","Fundamentos de Física 1","Fundamentos de Física 2","Fundamentos de Física 3","Fundamentos de Física 4","Fundamentos de Matemática Elementar 1","Fundamentos de Matemática Elementar 6","Fundamentos de Matemática Elementar 8","Fundamentos de Matemática Financeira","Fundamentos de Transferência de Calor e Massa","Fundamentos em Anatomia","Fundamentos y limites de la vonluntad","Gênese, Significado e Ensino da Filosofia no Século XII","Gente Pobre","Geometria Analítica - Noções de Matemática","Geometria Analítica e Álgebra Linear","Geometria Diferencial","Geometria Euclidiana Plana","Geometria Riemanniana","German Dictionary - German-English Engilsh-German","Gestão de Marketing Direto","Gestão de Serviços","Gestão Financeira Para Organizações da Sociedade Civil","Gesú di Nazaret","Gesú: Pagine scelte","Getulio 1 (1882-1930) - Dos anos de formação à conquista do poder","Getúlio 2 (1930 - 1945) - Do governo provusório à ditadura do Estado Novo","Getúlio 3 (1945 - 1954) - Da volta pela consagração popular ao suicídio","Gianna - a mulher forte","Ginecologia & Obstetrícia - Manual para o TEGO","Giovanni Paolo Teologo: Nelson Segno Delle Encicliche","Gloria in Excelsior - Ascensão, Apogeu e Queda do Maior Sucesso da Televisão Brasileiro","Gnoseologia","Gnosiologia Realista","Górgias","Governos da República","Gramática da Lingua Romena","Gramáticas da criação","Grande Dicionário Etimológico-Prosódico da LÍngua Portuguesa I","Grande Dicionário Etimológico-Prosódico da LÍngua Portuguesa II","Grande Dicionário Etimológico-Prosódico da LÍngua Portuguesa III","Grande Dicionário Etimológico-Prosódico da LÍngua Portuguesa IV","Grande Dicionário Etimológico-Prosódico da Língua Portuguesa IX","Grande Dicionário Etimológico-Prosódico da LÍngua Portuguesa V","Grande Dicionário Etimológico-Prosódico da LÍngua Portuguesa VI","Grande Dicionário Etimológico-Prosódico da LÍngua Portuguesa VII","Grande Dicionário Etimológico-Prosódico da LÍngua Portuguesa VIII","Grande Sertão: Veredas (Vermelho)","Great Books 8: Aristotle 1","Grotão do Café Amarelo*","Guerra e Paz 1","Guerra e Paz 2","Guia de orientação para os casos especiais","Guia Politicamente Incorreto da Filosofia - Ensaio da Ironia","Guia Politicamente Incorreto da História do Brasil","Guía práctica de liturgia","Guia Prático do Português Correto","Guida ai Misteri E Segreti di Roma","Gustavo Corção - Seleção","Hamlet","Hans Staden: Duas viaens ao Brasil","Harry Potter and the Philosopher's Stone","Harry Potter e a Ordem da Fênix","Harry Potter e a Pedra Filosofal","Helena","Hereges","Hernán Cortés - Mentalidad y Propósitos","Histoire de la Litterature Française","Histologia Básica","História","História Básica da Filosofia","Historia Basica de la Ciencia - Pasion Por el Saber","História Concisa do Brasil","História Contemporânea","História Contemporânea da Argentina","História da Educação na Antiguidade Cristã","História da Filosofia","História da Filosofia Contemporânea","História da Filosofia Cristã","História da Filosofia Moderna","História da Filosofia na Antigüidade","História da Filosofia na Idade Média","História da Filosofia Vol. 1","História da Filosofia Vol. 2","História da Filosofia Vol. 3","História da Matemática","História da Revolução Francesa","História da Televisão no Brasil","História das Doutrinas Econômicas","História das Idéias Estéticas no Brasil","História de Dom Pedro II - Ascensão","História de Dom Pedro II - Declínio","História de Dom Pedro II - Fastígio","Historia de la Filosofia Antiga","Historia de la Filosofia Contemporanea","Historia de la Filosofia Medieval","Historia de la Filosofia Moderna","Historia de la Iglesia II - La Iglesia en la Edad Moderna","Historia de la Iglesia III - La Iglesia en la Edad Contemporánea","História do Brasil","História do Brasil: Uma interpretação","História do Futuro - O Horizonte do Brasil no Século XXI","História do Mundo Feudal","História do Povo Brasileiro 1","História do Povo Brasileiro 3","História do Povo Brasileiro 4","História do Povo Brasileiro 5","História do Povo Brasileiro 6","História do Povo Brasilieiro 2","História Documental do Brasil","História Financeira do Brasil Colonial","História Para o Ensino Médio - História Geral e do Brasil","Historia Universal: De la Crisis del Siglo XIV a la Reforma - Tomo VI","Historia Universal: De las Revoluciones al Liberalismo - Tomo X","Historia Universal: De las Revoluciones al Liberalismo - Tomo XI","Historia Universal: Del Absolutismo a las Revoluciones - Tomo IX","Historia Universal: Del Mundo Antiguo al Medieval - Tomo III","Historia Universal: Fundamentos de la Civilizacion Europea - Tomo IV","Historia Universal: La Antigüedad Clasica - Tomo II*","Historia Universal: La Antigüedad Clasica - Tomo II**","Historia Universal: La Consolidacion de las Libertades - Tomo XII","Historia Universal: La Crisis del Humanismo y el Declive de la Hegemonia Española - Tomo VIII","Historia Universal: La Cristiandad Medieval - Tomo V","Historia Universal: Las Libertades y las Democracias - Tomo XIII","Historia Universal: Renacimiento, Reforma, Expansion Europea - Tomo VII","Histórias de Alphonse Daudet","Histórias Extraordinárias","Historical Atlas of Britain","History of England - B.C. 55 to A.D. 1920","Hitler","Homens em Armas","How To Solve It","Humilhados e Ofendidos","Humor y Serenidad","I Papi - storia e segreti","Iaiá Garcia","Idade Média - O que não nos ensinaram","Idade Média Ética e Política","Iglesias particulares y prelaturas personales","II Concilio di Calcedonia 1550 anni dopo","Il libro-atlante delle civiltà antiche","Ilusões Perdidas","Ilustríssimos Senhores","Imperial Japanese Navy Heavy Cruisers 1941-45","Imperial Japanese Navy Light Cruisers 1941-45","Imperium","Incríveis Passatempos Matemáticos","Indulgências - orientações litúrgico pastorais","infância","Inflação e Consumo: Modelos Teóricos Aplicados ao Imediato Pós-Cruzado","Inflação, Estagnação e Incerteza: Teoria e Experiência Brasileira","Informática para Concursos","Inglês - Gramática Prática","Iniciação à Filosofia de S. Tomás de Aquino - II","Iniciação à Filosofia de S. Tomás de Aquino - IV","Iniciação a Santo Tomás de Aquino: sua Pessoa e Obra","Iniciação Científica - Ensino Médio","Iniciación a la liturgia de la Iglesia","Inocência","Instalações Elétricas","Inteligência Artificial","Inteligência Emocional - e a arte de educar nossos filhos","Inteligência Social - o poder das relações humanas","Interfaces - Estudos e Traduções","Introdução à Álgebra","Introdução à Análise Matemática","Introdução à Ciência da Computação","Introdução à Economia","Introdução à Estatística","Introdução a Estruturas de Dados","Introdução à Filosofia de S. Tomás de Aquino - I","Introdução à Mecânica dos Fluidos","Introdução à retórica","Introdução à Teoria do Crescimento Econômico","Introdução à Teoria dos Números","Introdução à Teoria Geral da Administração","Introdução ao Brasil - Um banquete no trópico 1","Introdução ao Brasil - Um banquete no trópico 2","Introdução ao Direito Canônico","Introdução ao estudo de Santo Agostinho","Introdução Geral à Filosofia","Introduccion a la Filosofia","Introduccion a la filosofia de Santo Tomás de Aquino","Investimentos - como administrar melhor o seu dinheiro","Investindo em Ações: Os Primeiros Passos","Iracema","Italian Light Tanks - 1919-45","Ivanhoé","J.R.R. Tolkien Artist and Illustrator","J.R.R. Tolkien, Artist & Illustrator*","Jack definitivo: Segredos do executivo ddo século","Jane Eyre","Jean de Florette","Jeeves ao Largo","Jesús de Nazaret","Jesus Eucarístico em nossas vidas","Joana D'arc - A mulher forte","Joana d'Arc*","João Goulart - Uma Biografia","Jornal Nacional: A notícia faz história","José Fouché","Joseph Ratzinger - Uma biografia","Juca Mulato","Julgamento em Nuremberg","Karol Wojtyla - L'uomo di fine millenio","Kim","L’Uomo Del Secolo - l’ultimo profeta","La celebración del Misterio cristiano","La Confessione Sacramentale","La conjugaision des verber français","La eutanasia - 100 cuestiones y respuestas","La fe ante el reto de la cultura contemporánea","La fenomenología metafísica de Edith Stein","La formación por el arte y la literatura","La Hora de Tomás Moro - solo frente al poder","Lá Invención de la Edad Media","La mente del universo","La Mujer En El Tiempo de Las Cruzadas","La Partida Del Prefesor Martens","La persona y su intimidad","La personalidad del Beato Josemaría Escrivá de Balaguer","La práctica del confesor","La Razón de ser Hombre","La región de lo lúdico","La sagrada familia y la ideologia alemana","La Sociedad Invisible","La soledad del directivo","La verdad","La voluntad y sus actos (I)","Langenscheidts Taschenwörtenbücher - Tomo Segundo","Las fuentes de La moral cristiana - su método, su contenido y su historia","Las grandes perguntas","Las Virtudes","Latim para o Ginásio","Lawrence da Arábia","Lazarilho de Tormes","Le Systèm de Santé en France","Learn English Through Classic Literature - American Tales of Horror and the Supernatural","Lecciones de los maestros","Lei N. 13.467/17 - Uma Análise Didática da Reforma Trabalhista","Leitura e Anotações","Leitura e Produção de Textos","Lendas e Mitos do Brasil*","Ler, Pensar e Escrever - Elementos da Criação Volume 1","Leste Europeu - A revolução democrática","Letters To a Young Catholic","Liberalismo y liberalismos","Libertação Cristã - seletos ensaios teológicos","Lições de Abismo","Liev Tolstói: Contos Completos - Contos I","Liev Tolstói: Contos Completos - Contos II","Lima Barreto - Romance","Lírica - Redondilhas e Sonetos","Literarura do século XX e cristianismo I - O Silêncio de Deus","Literarura do século XX e cristianismo II - A Fé em Jesus Cristo","Literarura do século XX e cristianismo III - Esperança dos Homens","Littérature Française*","Lo eterno sin disimulo*","Lo Que Está Mal En El Mundo","Logica","Lorde Jim","Los derechos","Los grandes temas de Harry Potter","Los Monstruos de la Razón","Los Padres de la Iglesia I - una guía introductoria","Los Padres de la Iglesia II - una guía introductoria","Los Renglones Torcidos de Dios","Los Sacramentos Cristianos - curso de sacramentaria fundamental","Luís de Camões - Obra Completa","Luzia-Homem","Macbeth","Macro-economia","Macroeconomia","Macroeconomics","Macroeconomics - Imperfections, Institutions et Policies","Macunaíma","Made in Japan - Akio Morita e a Sony","Máfia Export","Magnificat","Maigret e il Lettone","Maigret e o Homem do Banco*","Maigret e o ladrão preguiçoso","Maigret em Nova Iorque","Maigret se diverte","Mansfield Park","Manual das Indulgências - normas e concessões","Manual de Bioética I - Fundamentos e Ética Biomédica","Manual de Bioética II - Aspectos Médico-Sociais","Manual de Contabilidade Das Sociedades Por Ações","Manual de Contabilidade Das Sociedades Por Ações - suplemento","Manual de Derecho Canonico","Manual de Derecho Canónico","Manual de Fontes de Informação","Manual de Herejias","Manual de Instalações Elétricas","Manual de Literatura Brasileira","Manual de Sagrada Escritura I - Introducción General","Manual de Sagrada Escritura II - Antigo Testamento","Manual de Sagrada Escritura III - Nuevo Testamento","Manual del actor","Manual Esquemático de Filosofia","Manual Esquemático de História da Filosofia","Manuelzão e Miguilim","Máquinas Elétricas","Mar Sem Fim","Maravilhas do Conto Mitológico*","Maria Antonieta","Maria Stuart","Marília de Dirceu*","Marketing: Gerenciamento e Serviços","Martins de Vasconcelos","Martírio da Seca","Matarazzo - A Travessia","Matarazzo - Colosso Brasileiro","Matemática - Volume Único","Matemática Divertida e Curiosa","Matemática e Imaginação","Matemática Elementar","Matemática Financeira","Matemática Financeira Objetiva e Aplicada","Matemática Para o 2° Grau - manual do professor","Matemática, Uma Breve História - Volume II","Matemática,uma breve história - Volume 2","Matéria de Poesia","Mauá - empresário do Império","Mecánica - Berkeley physics course","Medicina de Família e Cinama","Memoria del fitiro - 21 clàsicos para el siglo XXI","Memorial de Orígenes","Memórias de Rommel","Memórias de um Sargento de Milícias","Memórias do Cárcere 1","Memórias do Cárcere 2","Memórias Póstumas de Brás Cubas","Memórias Póstumas de Brás Cubas*","Metafisica","Metafísica da realidade - as relações entre a filosofia e a vida","Metodologia Científica","Metodologia do Trabalho Científico","Métodos de Dissecação","Meu Século","Meu Testamento Filosófico","Meu testamento filosófico - Experiência Cirstã de um pensador contemporâneo","Middlemarch","Midway","Midway - holocausto nipônico","Miguel Strogoff - O Correio do Czar","Mil dias: John F. Kennedy na Casa Branca - Volume Primeiro","Mil dias: John F. Kennedy na Casa Branca - Volume Segundo","Milagres Eucarísticos","Minhas Viagens Com Heródoto","Minhas viagens com Heródoto - entre a história e o jornalismo","Miracles","Miraculous Images of Our Lady","MIraculous Images of Our Lord","Mision de la universidad","Mistborn","Mistério no Caribe","Mitologia Grega","Moby Dick I","Moby Dick II","Moderna Gramática Portuguesa","Molière - Teatro Escolhido Volume I","Molière - Teatro Escolhido Volume II","Momentos da Historia dos Romenos","Monte Cassino","Moral de la persona","Morte e Vida Severina - e outros poemas para vozes*","Moscou 1941","Mother Angelica","Muito Além do Nosso Eu","Muito Grato, Jeeves","Mundo em Guerra","Mundo y santidad","Muralhas de Pedra, Canhões de Bronze, Homens de Ferro Fortificações do Brasil de 1504-2006 I - Rio de Janeiro","Muralhas de Pedra, Canhões de Bronze, Homens de Ferro Fortificações do Brasil de 1504-2006 II - Regiões Norte e Nordeste","Na Natureza Selvagem","Na Terra dos Lobos","Napoleão","Narraciones Extraordinarias I","Narraciones Extraordinarias II","Narrativas do Espólio","Náufragos, Traficantes e Degredados","Negociação - tecnologia e comportamento","Newman (1801 - 1890)","Niétotchka Niezvânova","Ninguém Escreve ao Coronel","No Ar Rarefeito","No te rindas ante...la depresion","No tribunal de meu pai*","Noción de Persona en Xavier Zubiri","Noções de Geometria Descritiva","Noções de Ginecologia","Noções de História da Filosofia","Noites Brancas","Nostalgia Del Absoluto","Notícias do Planatlo - a imprensa de Fernando Collor","Noturnos","Nouvelle Histoire de Mouchette","Novas Teorias Sociológicas","Nove Estórias","Novelas","Novelas Exemplares","Novo Direito Matrimonial Canônico","Nu Com a Mão no Bolso - Brasil: uma visão liberal","Nueva Historia Mínima de México","Números Complexos, Polinômios e Equações Algébricas","Números Notáveis","Números: Racionais e Irracionais","O (Novo) Francês sem Esforço","O (Novo) Inglês sem Esforço","O (novo) Italiano sem esforço","O Adolescente","O Aleph","O Alienista","O Alienista - e outros contos","O amigo de infância de Maigret","O Antigo Regime e a Revolução","O Apanhador no Campo de Centeio","O Apelo da Selva","O banquete (o simpósio ou do amor)","O Beijo e outras histórias","O Bom Ladrão","O cabeleira","O Caçador de Andróides","O Caçador de Pipas","O cadáver vivo","O Cálculo Com Geometria Analítica 1","O Cálculo com Geometria Analítica 2","O Capote e Outras Histórias","O Cardeal","O Caso dos Exploradores de Caverna","O Castelo de Otranto","O Conde de Monte Cristo","O Coração das Trevas","O Cristianismo e o Homem Contemporâneo","O Crocodilo","O desejo do vinho - conquistando o mundo","O despertar da senhorita Prim","O destino da civilização ante a avalanhce do homem-massa","O Detetive Parker Pine","O dia \"D\": ponta de lança da invasão","O Dia em que Lincoln Foi Assassinado*","O diário da turma 1976-1986 - a história do rock de Brasília","O Diário de Anne Frank","O Diário de Florença","O Discurso Autoritário de Cairu","O Doutor Jivago*","O Duplo","O Engenhoso Cavaleiro D. Quixote De La Mancha - primeiro livro","O Engenhoso Cavaleiro D. Quixote De La Mancha - segundo livro","O Escaravelho de Ouro - e outras histórias","O Espião que Saiu do Frio","O Espírito da FIlosofia Medieval","O Estado Nacional","O Eterno Marido","O Exército na História do Brasil 1 - Colônia","O Exército na História do Brasil 2 - Reino Unido e Império","O Exército na História do Brasil 3  - República","O Exército na História do Brasil 4 - Mapas, esquemas e esboços","O Falecido Mattia Pascal","O Fazedor","O Garimpeiro","O Gene da Matemática","O Grande Abismo","O Grande Circo","O Grande Gatsby","O Guarani","O Guardião de Memórias","O Herói das Eras","O Homem da Areia*","O Homem Eterno","O homem Eterno","O Homem Invisível - é outras histórias do Padre Brown","O Homem que Calculava","O Homem Que Foi Quinta Feira (um pesadelo)","O Homem Que Queria Ser Rei - e outros contos selecionados","O Homem que Sorria","O Idiota","O Imperador","O império e os novos bárbaros","O Incomparável Jeeves","O Instinto Matemático","O Leopardo","O Liberalismo Político","O Livro da Selva","O Livro das Virtudes de Sempre","O Livro de Ouro da Mitologia","O Livro do Gentio e dos Três Sábios","O livro negro","O Livro no Brasil (sua história)","O Lustre","O Mágico de Oz","O Manual do Peregrino Moderno","O Matrimônio Cristão","O medo de Maigret","O Méico e O Monstro","O Melhor de Peter Drucker","O Melhor do Conto Brasileiro","O Menino do Dedo Verde","O Menino do Pijama Listrado","O menino espelho","O Mensageiro do Rei - Romance da Vida de São Paulo e Seu Tempo*","O Mercador de Sonhos*","O Mercosul: negociações extra-regionais","O Messias","O Meu Pé de Laranja Lima","O minuto decisivo de Warterloo*","O Mistério das Jóias Roubadas: Um Caso do Comissário Maigret","O Morro dos Ventos Uivantes","O Mundo Contemporâneo - Relações Internacionais 1945-2000","O Mundo de Sofia","O Mundo do Senhor dos Anéis","O Mundo Encantado de Andersen - outras histórias escolhidas","O Mundo se Despedaça","O Óbvio Ululante: As Primeiras Confissões","O olhar da mente","O olhar no espelho","O Oriente Médio","O Outono da Idade Média","O Pagador de Promessas","O Pai Goriot","O Pau-brasil na História Nacional","O Pensamento Econômico em Perspectiva - uma história crítica","O Pequeno Príncipe*","O Petróleo - Uma História Mundial de Conquistas, Poder e Dinheiro","O Poço da Ascensão","O Preço a Pagar Por me Tornar Cristão","O Primo Basílio","O princípio da ação com duplo efeito e sua aplicação à gravidez ectópica","O Princípio da Dignidade da Pessoa Humana e o Direito à Vida","O Problema de Deus","O Processo","O Processo Nosso de Cada Dia","O Que Deu Errado no Oriente Médio","O que o inferno não é","O quinze","O Reacionário: Memórias e Confissões","O Regresso de Don Camilo","O Remador de Ben-Hur - Confissões Culturais*","O Retrato de Dorian Gray","O Rinoceronte","O Santo e a Porca","O Santo e a Porca/O casamento Suspeitoso","O Século do Nada","O Segredo de Chimneys","O Senhor dos Anéis - A Sociedade do Anel","O Senhor dos Anéis - As Duas Torres","O Senhor dos Anéis - O Retorno do Rei","O silêncio da água (Ilustrado)","O Sol é para Todos*","O Som da Montanha","O Som e a Fúria","O Talismã","O Tesouro da Casa Velha","O Universo Elegante","O universo numa casca de noz","O Vale sem Fim","O Velho e o Mar","O Zero e o Infinito","Obras Completas - Tomo VIII","Obras Poéticas de A. Gonçalves Dias","Obras Políticas (1ª fase - 1931-1937)","Odisséia","Oficiais e Gentlemen","Oliver Twist","Omissão da Universidade?","Onde os Homens Conquistam a Glória","Onde os velhos não têm vez","Operacional Mathematics","Operadores Auto-adjuntos e Equações Diferenciais Parciais","Opus Dei: estrutura e missão - sua realidade eclesiológica","Opvs Dei - Un'Indagine","Orçamento Público","Organização e Métodos","Organizações Inovadoras do Setor Financeiro","Organize-se: Soluções simples e fáceis para vencer o desafio diário da bagunça","Orgulho e Preconceito","Orlando Furioso","Ortega Y Gasset (coletanea en español)","Ortodoxia","Os 7 Hábitos das Famílias Altamente Eficazes","Os Anos de Aprendizado de Wilhelm Meister","Os Buddenbrook","Os Cães de Riga","Os Canhões de Navarone","Os Cantos","Os Carrilhões","Os Criadores","Os Crimes ABC","Os Donos do Poder","Os Eleitos*","Os Embaixadores","Os escrúpulos de Maigret","Os Gladiadores - a saga de Espártaco","Os Grandes Romances Históricos - O Coronel Chabert, Um Caso Tenebroso","Os Intelectuais","Os Lusíadas","Os Maias","Os Malavoglia","Os Melhores Contos de Katherine Mansfield","Os Meninos da Rua Paulo*","Os Miseráveis","Os Noivos","Os Papas: síntese histórica, curiosidades e pequenos fatos","Os pensadores - Platão, Xenofonte e Aristóteles","Os pensadores: Aristóteles (I)","Os Pequenos Jangadeiros","Os Quatro Amores","Os Quatro Grandes","Os Salmos","Os Sertões","Os Servos de Deus","OS Sinos de Nagasaki*","Os Trabalhadores do Mar","Os Três Mosqueteiros","Ouvindo a Voz do Cliente Interno - Transforme seu funcionário num parceiro","Oxford Advanced Dictionary of Current English","Oxford Português-Inglês Inglês-Português","Pablo de Tarso - cidadano del imperio","Padre Sérgio","Paidéia - A Formação do Homem Grego","Pais e Filhos","Pão da Unidade - Caminho, Verdade e Vida","Para Além do Planeta Silencioso","Para conhecer e viver as verdades da Fé","Para Saber Mais: fontes de informação em ciência e tecnologia","Para Uma Estrutura Cristã do Estado","Paraíso Perdido","Paratii","Pascal Estruturado","Passages - Student's Book 1","Passages - WorkBook 1","Pássaros Perdidos","Paternidad Responsable","Pedro - De Pescador a Cabeza de la Iglesia","Pedro Páramo e Chão em Chamas","Pela Glória e Pela Pátria","Pensar Com Conceitos","Pequeno Dicionário Brasileiro da Língua Portuguesa","Perelandra","Perfis Nacionais 1","Perfis Parlamentares 20 - Carlos Lacerda","Perfis Parlamentares 26 - Joaquim Nabuco","Perfume: História de um Assassino","Perguntas sobre el hombre","Petroladrões - A história do saque à Petrobras","Piaget e a Pré-escola","Pijama Para Dos","Piloto de Guerra","Pinacoteca","Pio X","Pioneiros e Empreendedores 1","Pioneiros e Empreendedores 2","Pioneiros e Empreendedores 3","Planejamento de Sistemas de Informação e Informática","Platero e Eu","Poemas - Fernando Pessoa","Poemas dos Becos de Goiás e Outras Histórias Mais","Poemas e Ensaios - Edgar Allan Poe","Poesia Reunida","Poesias Completas de Fagundes Varela II","Poirot Perde um Cliente","Política","Política Externa - A difiícil governança do mundo em crise","Política Externa - Ambiente e Ciência","Política Externa - América do Sul Bicentenário das Independências","Política Externa - Diplomacia, relações externais e jornalismo depois do WikiLeaks","Política Externa - Israel e Palestina: a paz é possível","Política Externa - O clima pós-Copenhague","Política Externa - O mundi das candidatas","Política Externa - O papel atual do Brasil na América do Sul","Política Externa - Os rumos do comércio mundial","Política Externa - Repercussões da Primavera Árabe","Politica Sin Dios","Por favor, cuida de Mamá","Por que Ler os Clássicos","Por qué soy católico?","Portal do Destino","Portões de Fogo","Português Descomplicado","Practical English Usage","Pratica del confessore","Preparación para la Confirmación","Pride and Prejudice","Priestly Indetity","Princípios da vida moral","Princípios de Pedagogia Sistemática","Princípios de Química","Princípios de Sistemas de Informação","Principios de Teologia Moral III - Sacramentos y vida sacramental","Principios Morales de Uso más Frecuente","Probabilidade - aplicações à estatística","Probabilidade Aplicada a Estatística","Probabilidade e Estatística","Problemas de Físico-Química (IME-ITA-Olímpiadas)","Problemas e Exercícios de Análise Matemática","Problemas fundamentais da filosofia moral","Problemas morais da existência humana","Programando Aplicativos de Banco de Dados em Linux","Projeto de Banco de Dados","Prólogos de Lá Biblioteca de Babel","Provérbios e Educação Moral - A filosofia de Tomás de Aquino e a Pedagogia Árabe do Mathal","Psicoterapia e sentido da vida","Psicoterapia e Sentido da Vida","Quatro Vozes","Que é filosofár?","Questões atuais de Bioética","Questões de Bioética - Um diálogo sobre a morte para viver melhor a vida","Quién es el hombre - Un espiritp en el tiempo","Química Geral - Volume 1","Química na Abordagem do Cotidiano","Quincas Borba","Raciocínio Lógico","Racionalidade, Carisma e Tradição Nas Organizações Empresariais Contemporâneas","Ramon Llull caballero de la fe","Razones Para Actuar - Una teoría del libre aldebrío","Recordações da Casa dos Mortos","Redes de Computadores","Redes de Computadores - curso completo","Redes Neurais - Princípios e Prática","Reflexões Sobre os Estados Unidos","Refrigeração e Ar Condicionado","Regulación de la natalidad - Problemas sociolóficos y morales","Relato de Um Náufrago","Relatos de um Peregrino Russo*","Reminiscência de um Império","Reminiscências de Viagens e Permanência no Brasil","Renato Russo - O filho da revolução","Rendição Incondicional","Resistencia de Materiales","Reunião Drummond - 10 livros de poesia*","Revolução Francesa","Robin Hood","Robinson Crusoé","Romance","Romano Guardini, maestro de vida*","Romeu e Julieta (Bilíngüe)","Rommel","Rondon","Rusbrock*","S. Tomás de Aquino","Salada russa*","Santo Agostinho e seu tempo","Santos = Dumont - O Inovador","Sargarana (Ed. 38)","Sargarana (Ed. 45)","Sargarana (Ed. 71)","Satiricon","Sé lo que estás pensando*","Seis Propostas Para o Próximo Milênio","Seleta em Prosa e Verso","Selling The Invisible","Senhora","Seqüestro em Parada de Lucas","Sermão de Santo António aos Peixes","Seus 30 Melhores Contos","Si Dios nos escuchase - Cartas a Malcom*","Simplesmente Helena*","Sinais e Sistemas","Sistema Político Brasilerio - uma introdução","Sistemas Operacionais","Só Não Erra Quem Não Faz","Sobre a brevidade da vida","Sobrevivi Para Contar","Sociedades Artificiais - a nova fronteira da inteligência nas máquinas","Sonhos Fulgurantes*","Star Wars Trilogy: The Original Soundtrack Anthology","Studia et Documenta: Rivista Dell'Istituto Storico San Josemaría Escrivá - Volume 1","Studia et Documenta: Rivista Dell'Istituto Storico San Josemaría Escrivá - Volume 14","Studia et Documenta: Rivista Dell'Istituto Storico San Josemaría Escrivá - Volume 2","Studia et Documenta: Rivista Dell'Istituto Storico San Josemaría Escrivá - Volume 3","Sucesso Profissional","Suma Contra los Gentiles: Edición Bilingüe - Volume I","Suma Contra los Gentiles: Edición Bilingüe - Volume II","Suma Teológica - Volume I","Suma Teológica - Volume I (Verde)","Suma Teológica - Volume II","Suma Teológica - Volume II (Verde)","Suma Teológica - Volume III","Suma Teológica - Volume III (Verde)","Suma Teológica - Volume IV","Suma Teológica - Volume IV (Verde)","Suma Teológica - Volume IX","Suma Teológica - Volume IX (Verde)","Suma Teológica - Volume V","Suma Teológica - Volume V (Verde)","Suma Teológica - Volume VI","Suma Teológica - Volume VII","Suma Teológica - Volume VII (Verde)","Suma Teológica - Volume VIII","Suma Teológica - Volume VIII (Verde)","Suma Teológica - Volume X","Suma Teológica - Volume XI","Suma Teológica: 1ª da 2ª Parte, Questões 18-48","Suma Teológica: 1ª da 2ª Parte, Questões 49-70","Suma Teológica: 1ª da 2ª Parte, Questões 71-89","Suma Teológica: 1ª da 2ª Parte, Questões 90-114","Suma Teológica: 1ª Parte, Questões 14-26","Suma Teológica: 1ª Parte, Questões 44-49","Suma Teológica: 2ª da 2ª Parte, Questões 171-189","Suma Teológica: 2ª Parte, Questões 1-17","Suma Teológica: 3ª Parte, Questões 27-49","Suma Teológica: 3ª Parte, Questões 60-72","Summit - Casa Thomas Jefferson - Thomas Prime I-II","Taking Care of Business - The First 20 Years","Tartarin de Tarascon","Técnica de Redação - o que é preciso saber para bem escrever","Tecnologia da Informação e da Comunicação","Tecnologia da Informação Para Gestão","Telecommunication Transmission Systems","Tempos Modernos - o mundo dos anos 20 aos 80","Tenga Usted éxito en su muerte: anti-método para vivir","Teogonia - a origem dos deuses","Teología de la Historia","Teologia Dogmatica - Díos Santificador","Teologia Moral","Teologia Moral C-I","Teologia Moral Católica I","Teologia Moral Católica II","Teologia Moral Católica III","Teologia Moral Fundamental","Teologia Morale speciale","Teologia Natural","Teologia Sacramentaria I","Teoría de la Acción Humana en Las Organizaciones","Teoría de la inteligencia creadora","Teoria dos Grafos Algoritmos","Teoria dos Números","Teoria dos Números Algébricos","Teoria Política - Fundamentos do Pensamento Político do Século XX","Termodinâmica e Energia Térmica","Testemunhas da Esperança: Quando o amor irrompe em situações de heroísmo e no dia-a-dia","Testemunhas da Paixão - Sete lendas do Evangelho","Testemunhas da Paixão - Sete lendas do Evangelho*","Testemunhas de Cristo - Edição para Moças","Texto Integral","Textos Escolhidos: Pe. Antônio Vieira*","The 21st Century World Atlas","The arts of the beautiful","The Autobiography of G.K Chesterton","The Canterbury Tales","The Cognitive Computer on Language, Learning and Artificial Intelligence","The Complete Plays and Poems of William Shakespeare","The computer and the brain","The Fellowship of the Ring","The Grapes of Wrath","The Kingdom of Saudi Arabia","The Law and Policy of the World Trade Organization","The Legend of Dr Pepper/Seven Up","The Phantom Of The Opera","The Physics of Christianity","The Problem of Pain","The Ramains of The Day","The Random House College Dictionary Revised Edition","The Tale of Two Cities","The Times Concise Atlas of the World","Themen 1 - Deustsch als Framdesprache","Themen 1 - Deustsch als Framdesprache - Exercícios","Themen 2 - Deustsch als Framdesprache","Themen 2 - Deustsch als Framdesprache - Exercícios","Themen 2 - Glossar Portugiesisch (Brasilien)","Til","Timbuktu","Tio Fred na Primavera","Tio Tungstênio","Tiziu e outras estórias*","Toda a Poesia de Augusto dos Anjos*","Toda Luz Que Não Podemos Ver","Toda Matemática em 1000 Exercícios","Todos os Caminhos Vão Dar a Roma","Todos os Homens do Rei","TOEFL Success","Tolkien’s World - paintings of Middle-earth","Tolkien's World: Paintings of Middle Earth","Tolkien*","Tom Jones","Tomas de Aquino: Vida, obras y doctrina","Tomismo e Neotomismo no Brasil","Tópicos de Matemática 2","Tópicos de Matemática 3","Tópicos Especiais em Física das calamidades*","TouchStone - 4A Student's Book","TouchStone - Lower Intermediate 2 Workbook","Tradução das Catilinárias de Cícero","Tratado da Medicina Interna - Volume 1","Tratado da Medicina Interna - Volume 2","Tratado de Filosofia II - Psicologia","Tratado de Teología Espiritual","Tratado Geral do Brasil","Tratado sobre a convivência","Três Alqueires e Uma Vaca","Três Paixões*","Tres Reformadores","Tudo Sobre Comunidade Européia","TvTupi - Uma Linda História de Amor","Um Acidente - e outras histórias","Um antropólogo em Marte*","Um Brinde de Cianureto","Um Cântico de Natal e Outras Histórias","Um Conto de Duas Cidades","Um Crime Adormecido","Um Destino Ignorado","Um enigma chamado Brasil : 29 intérpretes e um país","Um Estudo da História","Um Estudo em Vermelho","Um Experimento na Crítica Literária","Um Gato Entre os Pombos","Um Homem Para a Eternidade","Um Inimigo do Povo","Um Psicólogo no Campo de Concentração","Um Punhado de Pó*","Um sentido para a vida","Uma Criatura Dócil","Uma Família do Bixiga*","Uma Passagem Para a Índia","Uma Ponte Longe Demais","Uma Vida com Karol - em conjunto com Gian Franco Svidercoschi","Uma Visão do Mundo Contemporâneo","Un argumento olvidado en favor de la realidad de Dios","Un Hombre Para Todas las Horas - la correspondencia de Tomás Moro (1499-1534)","Un Hombre Solo - cartas desde la torre","Under The Jaguar Sun","Urgências e Perspectivas do Brasil","Us Marine Corps Tanks of WWII","Vá aonde seu coração mandar","Vade Mecum Saraiva 2017","Valuation - como precificar ações","Variáveis Complexas e Suas Aplicações","Variável Complexa 1","Vasto Mar de Sargaços","Vaticano - A Basílica de São Pedro, Os Museus Vaticanos, A Capela Sistina","Veinte Clavas para la nueva era","Vento Leste Vento Oeste","Verdade, Valores, Poder - Piedras de toque de la sociedad pluralista","Versos e Alguma Prosa de Luís de Camões","Viagem ao Centro da Terra","Viagens de Gulliver","Viagens de Marco Pólo","Vida Con Mi Amigo","Vidas Secas","Vila dos Confins","Villa Boa de Goyaz","Vinte Mil Léguas Submarinas","Vintém de Cobre","Virada no Jogo","Vita di Padre Pio","Vitória","Viventi in Cristo - compendio della morale cristiana","Volta ao Mundo em 80 Dias","Vozes da Cidade - coletânea","Warbreaker: O Sopro dos Deuses","Warren Buffett e a Análise de Balanços","William Shakespeare - Teatro Completo (Comédias)","William Shakespeare - Teatro Completo (Dramas Históricos)","World Special Forces Insignia","Wuthering Heights","WWII Infantry Anti-Tank Assault Tactics","WWII Infantry Anti-Tank Tactics","WWII Street-Fighting Tactics","Xisto no Espaço","Yen - O Japão e Seu Novo Império Financeiro","Zoologia dos Invertebrados","Zoonosis y enfermedades transmisibiles comunes al hombre y a los animales"];
+
+const PRAZO=30, HOJE=new Date(2026,9,29,10,0);
+const DAY=864e5;
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+let IDX=LIVROS.map(t=>[t,norm(t)]);
+const reindex=()=>{LIVROS.sort((a,b)=>a.localeCompare(b,'pt'));IDX=LIVROS.map(t=>[t,norm(t)])};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ago=n=>new Date(HOJE-n*DAY);
+const ddmm=d=>new Date(d).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+const hhmm=d=>new Date(d).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+const due=d=>new Date(+new Date(d)+PRAZO*DAY);
+const late=d=>Math.floor((HOJE-due(d))/DAY);
+
+// ---- dados de exemplo (o leitor desta tela é "Você") ----
+const ME={nome:'Tiago Melo Lemos',cel:'(61) 9 0000-0000',email:'tiago@exemplo.com',desde:ago(150)};
+const D={
+  loans:[
+    {t:'A Rebelião das Massas',who:ME.nome,cel:ME.cel,d:ago(122)},
+    {t:'O Senhor dos Anéis - As Duas Torres',who:'Lucas Andrade',cel:'(61) 9 8123-4410',d:ago(44)},
+    {t:'Crime e Castigo',who:'Pedro Henrique Sá',cel:'(61) 9 9654-0021',d:ago(33)},
+    {t:'Suma Teológica - Volume II',who:'Gabriel Moura',cel:'(61) 9 9177-3305',d:ago(18)},
+    {t:'Ortodoxia',who:'Rafael Tavares',cel:'(61) 9 8840-1192',d:ago(9)},
+    {t:'Os Irmãos Karamázov',who:'',cel:'',d:ago(0),skip:true},
+    {t:'Em Busca de Sentido',who:'João Vitor Lima',cel:'(61) 9 9302-7718',d:ago(6)},
+    {t:'O Homem Eterno',who:'Mateus Ribeiro',cel:'(61) 9 8215-6634',d:ago(3)},
+    {t:'Dom Casmurro',who:'Lucas Andrade',cel:'(61) 9 8123-4410',d:ago(1)},
+  ].filter(l=>!l.skip),
+  hist:[
+    {t:'O Engenhoso Cavaleiro D. Quixote De La Mancha - primeiro livro',who:ME.nome,op:'Devolução',d:ago(125)},
+    {t:'Ética a Nicômaco',who:'Rafael Tavares',op:'Devolução',d:ago(2)},
+    {t:'Ortodoxia',who:'Rafael Tavares',op:'Empréstimo',d:ago(9)},
+    {t:'A Vida Intelectual',who:'Gabriel Moura',op:'Devolução',d:ago(4)},
+  ],
+  reps:[
+    {k:'avaria',t:'Os Sertões',desc:'Capa solta, presa só pela lombada.',quando:'antes',who:'João Vitor Lima',d:ago(5)},
+    {k:'avaria',t:'Cálculo - Volume 1',desc:'Café derramado nas páginas 120 a 130.',quando:'eu',who:'Pedro Henrique Sá',d:ago(12)},
+    {k:'faltando',t:'Os Irmãos Karamázov',autor:'Dostoiévski',who:'Mateus Ribeiro',d:ago(2)},
+    {k:'sugestao',t:'Introdução ao Pensamento Clássico',autor:'—',desc:'Ajudaria quem está começando em filosofia.',who:'Gabriel Moura',d:ago(7)},
+  ],
+  readers:[
+    {nome:'Lucas Andrade',cel:'(61) 9 8123-4410',email:'lucas@exemplo.com',desde:ago(210)},
+    {nome:'Pedro Henrique Sá',cel:'(61) 9 9654-0021',email:'pedro@exemplo.com',desde:ago(180)},
+    {nome:'Gabriel Moura',cel:'(61) 9 9177-3305',email:'gabriel@exemplo.com',desde:ago(95)},
+    {nome:'Rafael Tavares',cel:'(61) 9 8840-1192',email:'rafael@exemplo.com',desde:ago(60)},
+    {nome:'João Vitor Lima',cel:'(61) 9 9302-7718',email:'joao@exemplo.com',desde:ago(40)},
+    {nome:'Mateus Ribeiro',cel:'(61) 9 8215-6634',email:'mateus@exemplo.com',desde:ago(12)},
+  ],
+};
+D.readers.push(ME);
+let FRESH=null; // destaca no painel o que o leitor acabou de fazer
+
+// ================= LEITOR =================
+const app=document.getElementById('app');
+const S={view:'home',q:'',book:null,kind:null,cause:null,err:'',toast:null,draft:null,cal:true};
+const myLoans=()=>D.loans.filter(l=>l.who===ME.nome);
+const words=q=>norm(q).trim().split(/\s+/).filter(Boolean);
+function search(q){const ws=words(q);if(!ws.length)return[];const r=IDX.filter(([,n])=>ws.every(w=>n.includes(w))).map(([t,n])=>[t,n.startsWith(ws[0])?0:1]);r.sort((a,b)=>a[1]-b[1]||a[0].localeCompare(b[0],'pt'));return r.map(x=>x[0])}
+function hl(t,q){const w=words(q)[0];if(!w)return esc(t);const i=norm(t).indexOf(w);if(i<0)return esc(t);return esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+w.length))+'</mark>'+esc(t.slice(i+w.length))}
+const out=t=>D.loans.find(l=>l.t===t);
+const ICON='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>';
+function head(){return `<div class="top"><div class="mark">CEAC</div><div class="t"><b>Biblioteca</b><span>Sala de Estudos</span></div>${S.first?'':`<div class="me">${esc(ME.nome.split(' ')[0])}<br><button class="link" style="font-size:12.5px;padding:0" data-a="me">trocar dados</button></div>`}</div>`}
+const GERENTE='andersonmaciel722@gmail.com';
+const CONTAS=[{nome:'Carlos Mendes',email:'carlos@exemplo.com',novo:true},{nome:'Tiago Melo Lemos',email:'tiago@exemplo.com'},{nome:'Anderson Maciel',email:GERENTE}];
+const GLOGO='<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+function vMe(){
+  if(S.first&&!S.gacc){
+    return `${head()}<div class="card ficha"><div class="lbl">Ficha do leitor · primeira vez</div><div class="h">Entre com sua conta Google</div>
+    <p style="margin:0;font-size:14.5px;color:var(--muted)">Nome e e-mail vêm do Google. Assim o lembrete de devolução cai direto na sua agenda.</p>
+    ${S.picker?`<div style="border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff"><div style="padding:10px 12px;font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--line)">${GLOGO} Escolha uma conta</div>${CONTAS.map((c,i)=>`<button class="res" style="padding:10px 12px;line-height:1.3;align-items:center" data-a="gpick" data-i="${i}"><span><b style="font-weight:600;display:block">${esc(c.nome)}</b><span style="font-size:13px;color:var(--muted)">${esc(c.email)}</span></span>${c.email===GERENTE?'<span class="pill info">gerente</span>':''}</button>`).join('')}</div>`
+    :`<button class="btn" data-a="gstart" style="display:flex;align-items:center;justify-content:center;gap:10px">${GLOGO} Entrar com Google</button>`}
+    <p class="count" style="margin:0">No mockup a lista de contas é de exemplo.</p></div>`;
+  }
+  if(S.gacc&&S.gacc.email===GERENTE){
+    return `${head()}<div class="card ficha"><div class="lbl">Conta de gerente</div><div class="h">Olá, Anderson</div>
+    <p style="margin:0;font-size:14.5px">Você entrou com ${esc(GERENTE)}. Esse e-mail abre o painel da biblioteca.</p>
+    <button class="btn brand" data-a="open-adm">Abrir o painel</button>
+    <button class="link" data-a="glogout">Entrar com outra conta</button></div>`;
+  }
+  const m=S.first?{nome:S.gacc.nome,email:S.gacc.email,cel:''}:ME;
+  return `${head()}<div class="card ficha"><div class="lbl">${S.first?'Ficha do leitor · último passo':'Ficha do leitor'}</div><div class="h">${S.first?'Falta só o celular':'Seus dados'}</div>
+  <div class="ruled"><div style="display:flex;gap:8px;align-items:center">${GLOGO}<b style="font-weight:600">${esc(m.nome)}</b></div><div style="font-family:var(--f-mono);font-size:13px;color:var(--muted)">${esc(m.email)}</div></div>
+  <label class="field">Celular com DDD<input class="in" id="f-cel" type="tel" inputmode="tel" autocomplete="tel" placeholder="(61) 9 9999-9999" value="${esc(m.cel)}"></label>
+  <p style="margin:0;font-size:13.5px;color:var(--muted)">Pro Anderson falar com você sobre o livro, se precisar.</p>
+  ${S.err?`<p class="err">${esc(S.err)}</p>`:''}
+  <button class="btn brand" data-a="save-me">${S.first?'Começar':'Salvar'}</button>
+  ${S.first?'<button class="link" data-a="glogout">‹ outra conta</button>':'<div class="row"><button class="link" data-a="home">‹ voltar</button><button class="link" data-a="logout" style="align-self:auto;text-align:right">Sair</button></div>'}</div>`;
+}
+function vHome(){
+  const mine=myLoans();
+  const loans=mine.map(l=>{const n=late(l.d);return `<div class="loan"><div class="ruled"><b>${esc(l.t)}</b><div class="m">pegou ${ddmm(l.d)} · devolver até <span class="stamp">${ddmm(due(l.d))}</span></div>${l.cal?`<div class="m">📅 lembrete na sua agenda Google</div>`:''}${n>0?`<div><span class="pill">${n} dias atrasado</span></div>`:''}</div><div class="row"><button class="btn brand" data-a="ret" data-t="${esc(l.t)}">Devolvi</button><button class="btn" data-a="rep-loan" data-t="${esc(l.t)}">Reportar</button></div></div>`}).join('');
+  let list='';
+  if(S.q.trim()){const res=search(S.q);
+    list=res.length?`<div class="count">${res.length} ${res.length===1?'livro':'livros'}</div><div class="results">${res.slice(0,40).map(t=>{const o=out(t);return `<button class="res" data-a="pick" data-t="${esc(t)}"><span>${hl(t,S.q)}</span>${o?'<span class="pill info">emprestado</span>':'<i aria-hidden="true">›</i>'}</button>`}).join('')}</div>`:
+    `<div class="empty">Nenhum livro com "${esc(S.q)}" na lista.<button class="link" data-a="missing">Avisar que está faltando</button></div>`;}
+  return `${head()}
+  ${mine.length?`<div class="card ficha"><div class="lbl">Você está com</div>${loans}</div>`:''}
+  <div class="card"><div class="h">Qual livro?</div><div class="search">${ICON}<input class="in" id="q" type="search" placeholder="Título ou parte do título" value="${esc(S.q)}" autocomplete="off" aria-label="Buscar livro"></div>${list}</div>
+  <button class="btn" data-a="report">Reportar ou sugerir</button>
+  <div class="foot">${LIVROS.length.toLocaleString('pt-BR')} livros · prazo de ${PRAZO} dias</div>`;
+}
+function vPick(){
+  const o=out(S.book), mine=o&&o.who===ME.nome;
+  return `${head()}<button class="link" data-a="home">‹ voltar</button>
+  <div class="card ficha"><div class="lbl">Livro</div><div class="ruled"><div class="h">${esc(S.book)}</div>
+  ${o&&!mine?`<div class="m" style="font-family:var(--f-mono);font-size:13px;color:var(--muted)">emprestado · volta até <span class="stamp">${ddmm(due(o.d))}</span></div>`:`<div style="font-family:var(--f-mono);font-size:13px;color:var(--muted)">se pegar hoje, devolver até <span class="stamp">${ddmm(due(HOJE))}</span></div>`}</div>
+  ${o&&!mine?`<p class="err" style="color:var(--muted);font-weight:400">Está com outra pessoa agora. Se ele está na sua mão, alguém esqueceu de devolver pelo app: pode pegar mesmo assim.</p>`:''}
+  ${mine?'':`<button class="chip" data-a="cal" aria-pressed="${S.cal}" style="flex-direction:row;align-items:center;gap:10px"><i class="dot" style="border-radius:3px"></i><span style="display:flex;flex-direction:column"><b>Lembrete na minha agenda</b><small>"Devolver livro: ${esc(S.book)}" no dia ${ddmm(due(HOJE))}</small></span></button>`}
+  <button class="btn brand" data-a="borrow">${mine?'Pegar de novo (renovar)':'Pegar emprestado'}</button>
+  <button class="btn" data-a="giveback">Estou devolvendo</button>
+  <button class="link" data-a="rep-book">Reportar problema neste livro</button></div>`;
+}
+const KINDS=[['faltando','Título faltando','O livro está na estante mas não aparece na lista'],['sugestao','Sugestão de livro','Um livro que a biblioteca devia ter'],['avaria','Livro avariado','Página solta, rasgo, mancha, capa danificada']];
+function vReport(){
+  const k=S.kind,d=S.draft||{};let f='';
+  if(k==='faltando')f=`<label class="field">Título do livro<input class="in" id="r-titulo" value="${esc(d.titulo??S.q)}"></label><label class="field">Autor <span class="opt">se souber</span><input class="in" id="r-autor" value="${esc(d.autor)}"></label>`;
+  if(k==='sugestao')f=`<label class="field">Título<input class="in" id="r-titulo" value="${esc(d.titulo)}"></label><label class="field">Autor<input class="in" id="r-autor" value="${esc(d.autor)}"></label><label class="field">Por que vale ter <span class="opt">opcional</span><textarea class="in" id="r-desc">${esc(d.desc)}</textarea></label>`;
+  if(k==='avaria')f=`<label class="field">Livro<input class="in" id="r-titulo" value="${esc(d.titulo??S.book??'')}"></label><label class="field">O que aconteceu<textarea class="in" id="r-desc" placeholder="Ex.: páginas 40 a 52 soltas">${esc(d.desc)}</textarea></label>
+  <div class="field">Quando foi?<div class="seg" style="text-transform:none;letter-spacing:0;font-family:var(--f-body)">${[['eu','Fui eu, aconteceu comigo'],['antes','Já estava assim quando peguei']].map(([v,t])=>`<button class="chip" data-a="cause" data-v="${v}" aria-pressed="${S.cause===v}"><i class="dot"></i><b>${t}</b></button>`).join('')}</div></div>`;
+  return `${head()}<button class="link" data-a="home">‹ voltar</button>
+  <div class="card"><div class="h">Reportar ou sugerir</div><div class="chips">${KINDS.map(([v,t,s])=>`<button class="chip" data-a="kind" data-v="${v}" aria-pressed="${k===v}"><b>${t}</b><small>${s}</small></button>`).join('')}</div></div>
+  ${k?`<div class="card ficha">${f}${S.err?`<p class="err">${esc(S.err)}</p>`:''}<button class="btn brand" data-a="send">Enviar</button></div>`:''}`;
+}
+function renderApp(keep){
+  const y=app.scrollTop,fq=document.activeElement?.id==='q';
+  app.innerHTML=`<div class="aw">${{me:vMe,home:vHome,pick:vPick,report:vReport}[S.view]()}</div>`;
+  const tw=document.getElementById('toast');tw.hidden=!S.toast;if(S.toast)tw.innerHTML=`<b>${esc(S.toast[0])}</b><span>${esc(S.toast[1])}</span>`;
+  if(keep){app.scrollTop=y;if(fq){const q=document.getElementById('q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}}else app.scrollTop=0;
+}
+let tt;function toast(a,b){S.toast=[a,b];clearTimeout(tt);tt=setTimeout(()=>{S.toast=null;renderApp(true)},3500)}
+function readDraft(){const g=id=>document.getElementById(id)?.value;S.draft={titulo:g('r-titulo'),autor:g('r-autor'),desc:g('r-desc')}}
+function go(v){S.view=v;S.err='';renderApp()}
+function mov(t,op){
+  D.loans=D.loans.filter(l=>l.t!==t||(op==='Empréstimo'&&false));
+  if(op==='Empréstimo'){D.loans=D.loans.filter(l=>l.t!==t);D.loans.push({t,who:ME.nome,cel:ME.cel,d:new Date(HOJE),cal:S.cal})}
+  D.hist.unshift({t,who:ME.nome,op,d:new Date(HOJE)});FRESH={tab:op==='Empréstimo'?'com':'hist',t};
+  if(op==='Devolução'&&A.tab==='com')FRESH.tab='hist';
+  A.tab=FRESH.tab;renderAdm();
+}
+app.addEventListener('input',e=>{if(e.target.id==='q'){S.q=e.target.value;renderApp(true)}});
+app.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='home')return go('home');
+  if(a==='me')return go('me');
+  if(a==='gstart'){S.picker=true;return renderApp(true)}
+  if(a==='gpick'){S.gacc=CONTAS[+b.dataset.i];S.picker=false;S.err='';if(S.gacc.email===GERENTE)return renderApp();
+    if(!S.gacc.novo){S.first=false;S.gacc=null;go('home');return toast('Bem-vindo de volta','Entrou como '+ME.nome)}
+    return renderApp()}
+  if(a==='glogout'){S.gacc=null;S.picker=true;S.first=true;return go('me')}
+  if(a==='logout'){S.first=true;S.gacc=null;S.picker=false;return go('me')}
+  if(a==='open-adm'){if(window.MODO==='leitor'){location.href='gestao.html';return}document.getElementById('cols').dataset.show='anderson';document.querySelectorAll('.tabs [data-show]').forEach(x=>x.setAttribute('aria-selected',x.dataset.show==='anderson'));A.tab='com';renderAdm();document.querySelector('.col-adm').scrollIntoView({behavior:'smooth',block:'start'});return}
+  if(a==='cal'){S.cal=!S.cal;return renderApp(true)}
+  if(a==='save-me'){
+    const g=S.first?S.gacc:ME,nome=g.nome,email=g.email,cel=document.getElementById('f-cel').value.trim();
+    if(cel.replace(/\D/g,'').length<10){S.err='Confira o celular, com DDD.';return renderApp(true)}
+    const dg=cel.replace(/\D/g,'');const celF=dg.length===11?`(${dg.slice(0,2)}) ${dg[2]} ${dg.slice(3,7)}-${dg.slice(7)}`:dg.length===10?`(${dg.slice(0,2)}) ${dg.slice(2,6)}-${dg.slice(6)}`:cel;
+    if(S.first){D.readers[D.readers.indexOf(ME)]={...ME};Object.assign(ME,{nome,cel:celF,email,desde:new Date(HOJE)});D.readers.push(ME)}
+    else{const old=ME.nome;[...D.loans,...D.hist,...D.reps].forEach(x=>{if(x.who===old){x.who=nome;if('cel' in x)x.cel=celF}});Object.assign(ME,{nome,cel:celF,email})}
+    const was=S.first;S.first=false;S.gacc=null;FRESH={tab:'leitores',t:nome};A.tab='leitores';renderAdm();go('home');
+    return toast(was?'Cadastro feito':'Dados atualizados',was?'Agora é só buscar o livro.':'Os próximos recibos vão pra '+email);
+  }
+  if(a==='pick'){S.book=b.dataset.t;return go('pick')}
+  if(a==='borrow'){const t=S.book,c=S.cal;mov(t,'Empréstimo');S.q='';go('home');return toast('Empréstimo registrado',c?'Lembrete criado na sua agenda: "Devolver livro: '+t+'" em '+ddmm(due(HOJE))+'.':'A confirmação com o recibo chega no seu e-mail.')}
+  if(a==='giveback'){mov(S.book,'Devolução');S.q='';go('home');return toast('Devolução registrada',S.book)}
+  if(a==='ret'){mov(b.dataset.t,'Devolução');renderApp(true);return toast('Devolução registrada',b.dataset.t)}
+  if(a==='report'){S.kind=null;S.book=null;S.cause=null;S.draft=null;S.q='';return go('report')}
+  if(a==='missing'){S.kind='faltando';S.cause=null;S.draft=null;return go('report')}
+  if(a==='rep-loan'){S.kind='avaria';S.book=b.dataset.t;S.cause=null;S.draft=null;return go('report')}
+  if(a==='rep-book'){S.kind='avaria';S.cause=null;S.draft=null;return go('report')}
+  if(a==='kind'){readDraft();S.kind=b.dataset.v;S.err='';return renderApp(true)}
+  if(a==='cause'){readDraft();S.cause=b.dataset.v;return renderApp(true)}
+  if(a==='send'){readDraft();const d=S.draft;
+    if(!d.titulo?.trim()){S.err='Escreva o título do livro.';return renderApp(true)}
+    if(S.kind==='avaria'&&!d.desc?.trim()){S.err='Conte o que aconteceu com o livro.';return renderApp(true)}
+    if(S.kind==='avaria'&&!S.cause){S.err='Marque se foi você ou se já estava assim.';return renderApp(true)}
+    D.reps.unshift({k:S.kind,t:d.titulo.trim(),autor:(d.autor||'').trim(),desc:(d.desc||'').trim(),quando:S.cause,who:ME.nome,d:new Date(HOJE)});
+    FRESH={tab:'rep',t:d.titulo.trim()};A.tab='rep';renderAdm();
+    const k=S.kind;S.draft=null;go('home');toast({faltando:'Aviso enviado',sugestao:'Sugestão enviada',avaria:'Avaria reportada'}[k],'Obrigado! O Anderson recebe.');}
+});
+
+// ================= ANDERSON =================
+const adm=document.getElementById('adm');
+const A={tab:'com',q:'',mode:null,photos:[],added:[],rm:null,addT:'',err:''};
+const KL={avaria:'Avaria',faltando:'Título faltando',sugestao:'Sugestão'};
+function sortedLoans(){return [...D.loans].sort((a,b)=>a.d-b.d)}
+function tCom(){
+  const rows=sortedLoans().map(l=>{const n=late(l.d);const isNew=FRESH&&FRESH.tab==='com'&&FRESH.t===l.t;
+    return `<tr class="${isNew?'new':''}"><td><b>${esc(l.t)}</b></td><td>${esc(l.who)}<span class="sub">${esc(l.cel)}</span></td><td class="mono">${ddmm(l.d)}</td><td class="mono"><span class="stamp" style="transform:none">${ddmm(due(l.d))}</span></td><td>${n>0?`<span class="pill">${n} dias atrasado</span>`:`<span class="pill ok">no prazo</span>`}</td><td><div class="acts">${n>0?`<button class="btn sm" data-x="cobrar" data-t="${esc(l.t)}">Cobrar</button>`:''}<button class="btn sm" data-x="devolvido" data-t="${esc(l.t)}">Marcar devolvido</button></div></td></tr>`}).join('');
+  return `<div class="tbl-wrap"><table><thead><tr><th>Livro</th><th>Com quem</th><th>Pegou</th><th>Volta até</th><th>Situação</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="6">Nenhum livro emprestado agora.</td></tr>'}</tbody></table></div>
+  <p class="hint">"Cobrar" abre o WhatsApp do leitor com a mensagem pronta: livro, data e prazo. Atrasados aparecem primeiro.</p>`;
+}
+function tRep(){
+  const open=D.reps.filter(r=>!r.done).length;
+  return `<div class="reps">${D.reps.map((r,i)=>{const isNew=FRESH&&FRESH.tab==='rep'&&FRESH.t===r.t&&i===0;
+    const tag=r.k==='avaria'?(r.quando==='eu'?'<span class="pill">leitor causou</span>':'<span class="pill info">já estava assim</span>'):r.k==='faltando'?'<span class="pill info">falta na lista</span>':'<span class="pill ok">sugestão</span>';
+    return `<div class="rep ${r.done?'done':''}" style="${isNew?'background:var(--soft)':''}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="lbl">${KL[r.k]}</span>${tag}</div>
+    <div class="ruled"><b>${esc(r.t)}</b>${r.autor&&r.autor!=='—'?`<p style="color:var(--muted)">${esc(r.autor)}</p>`:''}${r.desc?`<p>${esc(r.desc)}</p>`:''}</div>
+    <div class="who">${esc(r.who)} · ${ddmm(r.d)}</div>
+    ${r.done?'<span class="pill ok" style="align-self:flex-start">resolvido</span>':`<div class="row">${r.k!=='avaria'?`<button class="btn sm" data-x="acervo" data-i="${i}">Pôr no acervo</button>`:''}<button class="btn sm" data-x="resolver" data-i="${i}">Resolvido</button></div>`}</div>`}).join('')}</div>
+  <p class="hint">Na avaria, o leitor diz se foi ele ou se o livro já estava assim. Isso ajuda a saber quem conversar. ${open} em aberto.</p>`;
+}
+// Títulos de exemplo que o mockup "lê" das fotos. Na versão real, uma IA lê a capa.
+const LIDOS=['Os Irmãos Karamázov','O Nome da Rosa','Cem Anos de Solidão','A Peste','Confissões','O Hobbit','Memórias de Adriano','Orgulho e Preconceito (2ª cópia)'];
+let lidoN=0;
+function tAddBox(){
+  if(A.mode==='manual')return `<div class="rep" style="margin-top:12px"><span class="lbl">Livro novo</span>
+    <label class="field">Título exatamente como na capa<input class="in" id="add-t" value="${esc(A.addT||'')}" placeholder="Ex.: Os Irmãos Karamázov"></label>
+    ${A.err?`<p class="err">${esc(A.err)}</p>`:''}
+    <div class="row" style="max-width:360px"><button class="btn sm brand" data-x="add-ok">Adicionar ao acervo</button><button class="btn sm" data-x="add-cancel">Cancelar</button></div></div>`;
+  if(A.mode==='foto')return `<div class="rep" style="margin-top:12px"><span class="lbl">Adicionar por foto</span>
+    <p style="margin:0;font-size:14px">Tire a foto da capa (ou da lombada) ou escolha várias da galeria. Cada foto vira um título pra conferir antes de entrar.</p>
+    <label class="btn sm" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;cursor:pointer">📷 Tirar foto ou escolher<input type="file" id="add-f" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0"></label>
+    ${A.photos.length?`<div class="reps" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr));padding-top:4px">${A.photos.map((p,i)=>`<div style="display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);padding:8px;border-radius:3px;background:var(--surface)"><img src="${p.url}" alt="" style="width:100%;height:120px;object-fit:cover;border-radius:2px;background:var(--soft)"><span class="count">título lido da capa · exemplo</span><input class="in" data-ph="${i}" value="${esc(p.t)}" style="font-size:15px"><button class="link" data-x="ph-rm" data-i="${i}" style="font-size:13px">não adicionar esta</button></div>`).join('')}</div>
+    <div class="row" style="max-width:420px"><button class="btn sm brand" data-x="ph-ok">Adicionar ${A.photos.length} ${A.photos.length===1?'livro':'livros'}</button><button class="btn sm" data-x="add-cancel">Cancelar</button></div>`:'<button class="btn sm" data-x="add-cancel" style="align-self:flex-start">Cancelar</button>'}</div>`;
+  return '';
+}
+function tAcervo(){
+  const ws=words(A.q);let list=(ws.length?IDX.filter(([,n])=>ws.every(w=>n.includes(w))).map(x=>x[0]):LIVROS);
+  if(!ws.length&&A.added.length)list=[...A.added.filter(t=>LIVROS.includes(t)),...list.filter(t=>!A.added.includes(t))];
+  list=list.slice(0,30);
+  return `<div class="row" style="flex-wrap:wrap;margin-top:12px;max-width:520px"><button class="btn sm brand" data-x="add-man">+ Adicionar livro</button><button class="btn sm" data-x="add-foto">📷 Adicionar por foto</button></div>
+  ${tAddBox()}
+  <div class="adm-search">${ICON}<input class="in" id="aq" style="border:0;box-shadow:none" placeholder="Buscar no acervo" value="${esc(A.q)}" aria-label="Buscar no acervo"></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Livro</th><th>Situação</th><th></th></tr></thead><tbody>${list.map(t=>{const o=out(t),isNew=A.added.includes(t);
+    const act=A.rm===t?`<div class="acts"><span style="font-size:13px;color:var(--warn);font-weight:600;align-self:center">Tirar do acervo?</span><button class="btn sm" data-x="rm-ok" data-t="${esc(t)}" style="border-color:var(--warn);color:var(--warn)">Sim, tirar</button><button class="btn sm" data-x="rm-no">Não</button></div>`
+      :`<div class="acts">${o?'':`<button class="btn sm" data-x="rm" data-t="${esc(t)}">Tirar</button>`}</div>`;
+    return `<tr class="${isNew?'new':''}"><td>${esc(t)}${isNew?' <span class="pill ok">novo</span>':''}</td><td>${o?`<span class="pill info">com ${esc(o.who.split(' ')[0])} até ${ddmm(due(o.d))}</span>`:'<span class="pill ok">na estante</span>'}</td><td>${act}</td></tr>`}).join('')}</tbody></table></div>
+  <p class="hint">${LIVROS.length.toLocaleString('pt-BR')} livros. O que entra ou sai aqui muda na busca do leitor na hora. Livro emprestado não pode ser tirado até voltar.</p>`;
+}
+function addBooks(ts){
+  const novos=ts.map(t=>t.trim()).filter(t=>t&&!LIVROS.includes(t));
+  LIVROS.push(...novos);reindex();A.added=[...novos,...A.added];A.mode=null;A.photos=[];A.addT='';A.err='';A.q='';
+  renderAdm();renderApp(true);return novos.length;
+}
+function tHist(){
+  return `<div class="tbl-wrap"><table><thead><tr><th>Quando</th><th>Movimento</th><th>Livro</th><th>Leitor</th></tr></thead><tbody>${[...D.hist].sort((a,b)=>b.d-a.d).map((h,i)=>{const isNew=FRESH&&FRESH.tab==='hist'&&FRESH.t===h.t&&i===0;return `<tr class="${isNew?'new':''}"><td class="mono">${ddmm(h.d)}</td><td>${h.op==='Empréstimo'?'<span class="pill info">saiu</span>':'<span class="pill ok">voltou</span>'}</td><td>${esc(h.t)}</td><td>${esc(h.who)}</td></tr>`}).join('')}</tbody></table></div>`;
+}
+function tLeitores(){
+  const rs=[...D.readers].sort((a,b)=>b.desde-a.desde);
+  return `<div class="tbl-wrap"><table><thead><tr><th>Leitor</th><th>Celular</th><th>E-mail</th><th>Desde</th><th>Com ele agora</th></tr></thead><tbody>${rs.map(r=>{const n=D.loans.filter(l=>l.who===r.nome),isNew=FRESH&&FRESH.tab==='leitores'&&FRESH.t===r.nome,atr=n.some(l=>late(l.d)>0);
+    return `<tr class="${isNew?'new':''}"><td><b>${esc(r.nome)}</b></td><td class="mono">${esc(r.cel)}</td><td>${esc(r.email)}</td><td class="mono">${ddmm(r.desde)}</td><td>${n.length?`<span class="pill ${atr?'':'info'}">${n.length} ${n.length===1?'livro':'livros'}${atr?' · atrasado':''}</span>`:'<span class="pill ok">nenhum</span>'}</td></tr>`}).join('')}</tbody></table></div>
+  <p class="hint">O leitor preenche a ficha uma vez, no primeiro acesso. Se trocar celular ou e-mail, a mudança aparece aqui.</p>`;
+}
+function renderAdm(){
+  const nLate=D.loans.filter(l=>late(l.d)>0).length, nRep=D.reps.filter(r=>!r.done).length;
+  const back=D.hist.filter(h=>h.op==='Devolução'&&h.d.getMonth()===HOJE.getMonth()).length;
+  const tabs=[['com','Com quem está',D.loans.length,nLate?'warn':''],['rep','Reportes',nRep,nRep?'warn':''],['leitores','Leitores',D.readers.length,''],['acervo','Acervo',LIVROS.length,''],['hist','Movimentos',D.hist.length,'']];
+  const fa=document.activeElement?.id==='aq';
+  adm.innerHTML=`<div class="adm-top"><div class="mark">CEAC</div><div class="t"><b>Biblioteca · gestão</b><span>Sala de Estudos</span></div><div class="who" style="text-align:right">Anderson · gerente<br><span style="font-family:var(--f-mono);font-size:12px">entrou com ${GERENTE}</span></div></div>
+  <div class="kpis"><div class="kpi"><div class="n">${D.loans.length}</div><span>emprestados agora</span></div><div class="kpi"><div class="n ${nLate?'warn':''}">${nLate}</div><span>atrasados</span></div><div class="kpi"><div class="n">${back}</div><span>devolvidos em outubro</span></div><div class="kpi"><div class="n ${nRep?'warn':''}">${nRep}</div><span>reportes em aberto</span></div></div>
+  <div class="subtabs" role="tablist">${tabs.map(([k,t,c,w])=>`<button role="tab" data-tab="${k}" aria-selected="${A.tab===k}">${t}<span class="c ${w}">${c.toLocaleString('pt-BR')}</span></button>`).join('')}</div>
+  <div class="pane">${{com:tCom,rep:tRep,leitores:tLeitores,acervo:tAcervo,hist:tHist}[A.tab]()}</div>`;
+  if(fa){const q=document.getElementById('aq');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
+}
+adm.addEventListener('input',e=>{
+  if(e.target.id==='aq'){A.q=e.target.value;renderAdm()}
+  if(e.target.id==='add-t')A.addT=e.target.value;
+  if(e.target.dataset.ph)A.photos[+e.target.dataset.ph].t=e.target.value;
+});
+adm.addEventListener('change',e=>{
+  if(e.target.id!=='add-f')return;
+  [...e.target.files].forEach(f=>{A.photos.push({url:URL.createObjectURL(f),t:LIDOS[lidoN++%LIDOS.length]})});
+  renderAdm();
+});
+adm.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab]');if(t){A.tab=t.dataset.tab;FRESH=null;return renderAdm()}
+  const b=e.target.closest('[data-x]');if(!b)return;const x=b.dataset.x;
+  if(x==='devolvido'){const l=out(b.dataset.t);D.loans=D.loans.filter(y=>y!==l);D.hist.unshift({t:l.t,who:l.who,op:'Devolução',d:new Date(HOJE)});FRESH=null;renderAdm();renderApp(true)}
+  if(x==='cobrar'){b.textContent='Abriria o WhatsApp';b.disabled=true}
+  if(x==='resolver'){D.reps[+b.dataset.i].done=true;FRESH=null;renderAdm()}
+  if(x==='acervo'){const r=D.reps[+b.dataset.i];r.done=true;FRESH=null;addBooks([r.t]);A.tab='acervo';renderAdm()}
+  if(x==='add-man'){A.mode='manual';A.err='';renderAdm();document.getElementById('add-t')?.focus()}
+  if(x==='add-foto'){A.mode='foto';A.photos=[];renderAdm()}
+  if(x==='add-cancel'){A.mode=null;A.photos=[];A.err='';renderAdm()}
+  if(x==='add-ok'){const t=(A.addT||'').trim();if(!t){A.err='Escreva o título.';return renderAdm()}if(LIVROS.includes(t)){A.err='Esse título já está no acervo.';return renderAdm()}addBooks([t])}
+  if(x==='ph-rm'){A.photos.splice(+b.dataset.i,1);renderAdm()}
+  if(x==='ph-ok')addBooks(A.photos.map(p=>p.t));
+  if(x==='rm'){A.rm=b.dataset.t;renderAdm()}
+  if(x==='rm-no'){A.rm=null;renderAdm()}
+  if(x==='rm-ok'){const t=b.dataset.t;LIVROS.splice(LIVROS.indexOf(t),1);reindex();A.added=A.added.filter(y=>y!==t);A.rm=null;renderAdm();renderApp(true)}
+});
+
+// abas no celular/tela estreita
+document.querySelectorAll('.tabs [data-show]').forEach(b=>b.addEventListener('click',()=>{document.getElementById('cols').dataset.show=b.dataset.show;document.querySelectorAll('.tabs [data-show]').forEach(x=>x.setAttribute('aria-selected',x===b))}));
+document.getElementById('first').addEventListener('click',()=>{S.first=true;S.gacc=null;S.picker=false;S.err='';S.view='me';document.getElementById('cols').dataset.show='leitor';document.querySelectorAll('.tabs [data-show]').forEach(x=>x.setAttribute('aria-selected',x.dataset.show==='leitor'));renderApp();document.querySelector('.col-leitor').scrollIntoView({behavior:'smooth',block:'start'})});
+const MODO=window.MODO||'';
+if(MODO){document.body.dataset.mode=MODO;const p=document.querySelector('.intro p');
+  p.textContent=MODO==='leitor'?'Mockup da página de quem pega o livro. Nomes e empréstimos são de exemplo; os 1.590 livros são os reais. Nada é enviado.':'Mockup do painel de gestão do Anderson. Nomes e empréstimos são de exemplo; os 1.590 livros são os reais. Nada é salvo.';
+  document.querySelector('.intro h1').textContent=MODO==='leitor'?'Biblioteca CEAC · leitor':'Biblioteca CEAC · gestão';}
+renderApp();renderAdm();
+})();
+</script>
+
+</body>
+</html>
