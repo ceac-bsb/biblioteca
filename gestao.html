@@ -190,6 +190,8 @@ tr.new td{background:var(--soft)}
 .adm-top .who span{font-family:var(--f-body)!important}
 /* ---------- modos separados: leitor.html e gestao.html (window.MODO) ---------- */
 body[data-mode] .tabs,body[data-mode] .colh{display:none!important}
+[hidden]{display:none!important}
+body[data-mode="gestao"] .cols .col-adm,body[data-mode="leitor"] .cols .col-leitor{display:block!important}
 body[data-mode="leitor"] .cols .col-adm,body[data-mode="leitor"] .notes{display:none!important}
 body[data-mode="gestao"] .cols .col-leitor,body[data-mode="gestao"] #first{display:none!important}
 body[data-mode="leitor"] .cols{grid-template-columns:minmax(0,1fr)}
