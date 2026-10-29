@@ -430,17 +430,19 @@ function tRep(){
   <p class="hint">Na avaria, o leitor diz se foi ele ou se o livro já estava assim. Isso ajuda a saber quem conversar. ${open} em aberto.</p>`;
 }
 // Títulos de exemplo que o mockup "lê" das fotos. Na versão real, uma IA lê a capa.
-const LIDOS=['Os Irmãos Karamázov','O Nome da Rosa','Cem Anos de Solidão','A Peste','Confissões','O Hobbit','Memórias de Adriano','Orgulho e Preconceito (2ª cópia)'];
+const LIDOS=[['Os Irmãos Karamázov','Fiódor Dostoiévski'],['O Nome da Rosa','Umberto Eco'],['Cem Anos de Solidão','Gabriel García Márquez'],['A Peste','Albert Camus'],['Confissões','Santo Agostinho'],['O Hobbit','J.R.R. Tolkien'],['Memórias de Adriano','Marguerite Yourcenar']];
+const AUTOR={};
 let lidoN=0;
 function tAddBox(){
   if(A.mode==='manual')return `<div class="rep" style="margin-top:12px"><span class="lbl">Livro novo</span>
     <label class="field">Título exatamente como na capa<input class="in" id="add-t" value="${esc(A.addT||'')}" placeholder="Ex.: Os Irmãos Karamázov"></label>
+    <label class="field">Autor<input class="in" id="add-a" value="${esc(A.addA||'')}" placeholder="Ex.: Fiódor Dostoiévski"></label>
     ${A.err?`<p class="err">${esc(A.err)}</p>`:''}
     <div class="row" style="max-width:360px"><button class="btn sm brand" data-x="add-ok">Adicionar ao acervo</button><button class="btn sm" data-x="add-cancel">Cancelar</button></div></div>`;
   if(A.mode==='foto')return `<div class="rep" style="margin-top:12px"><span class="lbl">Adicionar por foto</span>
-    <p style="margin:0;font-size:14px">Tire a foto da capa (ou da lombada) ou escolha várias da galeria. Cada foto vira um título pra conferir antes de entrar.</p>
+    <p style="margin:0;font-size:14px">Tire a foto da capa (ou da lombada) ou escolha várias da galeria. Cada foto vira título e autor pra conferir antes de entrar.</p>
     <label class="btn sm" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;cursor:pointer">📷 Tirar foto ou escolher<input type="file" id="add-f" accept="image/*" multiple style="position:absolute;width:1px;height:1px;opacity:0"></label>
-    ${A.photos.length?`<div class="reps" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr));padding-top:4px">${A.photos.map((p,i)=>`<div style="display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);padding:8px;border-radius:3px;background:var(--surface)"><img src="${p.url}" alt="" style="width:100%;height:120px;object-fit:cover;border-radius:2px;background:var(--soft)"><span class="count">título lido da capa · exemplo</span><input class="in" data-ph="${i}" value="${esc(p.t)}" style="font-size:15px"><button class="link" data-x="ph-rm" data-i="${i}" style="font-size:13px">não adicionar esta</button></div>`).join('')}</div>
+    ${A.photos.length?`<div class="reps" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr));padding-top:4px">${A.photos.map((p,i)=>`<div style="display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);padding:8px;border-radius:3px;background:var(--surface)"><img src="${p.url}" alt="" style="width:100%;height:120px;object-fit:cover;border-radius:2px;background:var(--soft)"><span class="count">lido da capa · exemplo</span><label class="field" style="font-size:12px">Título<input class="in" data-ph="${i}" value="${esc(p.t)}" style="font-size:15px"></label><label class="field" style="font-size:12px">Autor<input class="in" data-pa="${i}" value="${esc(p.a)}" style="font-size:15px"></label><button class="link" data-x="ph-rm" data-i="${i}" style="font-size:13px">não adicionar esta</button></div>`).join('')}</div>
     <div class="row" style="max-width:420px"><button class="btn sm brand" data-x="ph-ok">Adicionar ${A.photos.length} ${A.photos.length===1?'livro':'livros'}</button><button class="btn sm" data-x="add-cancel">Cancelar</button></div>`:'<button class="btn sm" data-x="add-cancel" style="align-self:flex-start">Cancelar</button>'}</div>`;
   return '';
 }
@@ -451,15 +453,16 @@ function tAcervo(){
   return `<div class="row" style="flex-wrap:wrap;margin-top:12px;max-width:520px"><button class="btn sm brand" data-x="add-man">+ Adicionar livro</button><button class="btn sm" data-x="add-foto">📷 Adicionar por foto</button></div>
   ${tAddBox()}
   <div class="adm-search">${ICON}<input class="in" id="aq" style="border:0;box-shadow:none" placeholder="Buscar no acervo" value="${esc(A.q)}" aria-label="Buscar no acervo"></div>
-  <div class="tbl-wrap"><table><thead><tr><th>Livro</th><th>Situação</th><th></th></tr></thead><tbody>${list.map(t=>{const o=out(t),isNew=A.added.includes(t);
+  <div class="tbl-wrap"><table><thead><tr><th>Livro</th><th>Autor</th><th>Situação</th><th></th></tr></thead><tbody>${list.map(t=>{const o=out(t),isNew=A.added.includes(t);
     const act=A.rm===t?`<div class="acts"><span style="font-size:13px;color:var(--warn);font-weight:600;align-self:center">Tirar do acervo?</span><button class="btn sm" data-x="rm-ok" data-t="${esc(t)}" style="border-color:var(--warn);color:var(--warn)">Sim, tirar</button><button class="btn sm" data-x="rm-no">Não</button></div>`
       :`<div class="acts">${o?'':`<button class="btn sm" data-x="rm" data-t="${esc(t)}">Tirar</button>`}</div>`;
-    return `<tr class="${isNew?'new':''}"><td>${esc(t)}${isNew?' <span class="pill ok">novo</span>':''}</td><td>${o?`<span class="pill info">com ${esc(o.who.split(' ')[0])} até ${ddmm(due(o.d))}</span>`:'<span class="pill ok">na estante</span>'}</td><td>${act}</td></tr>`}).join('')}</tbody></table></div>
+    return `<tr class="${isNew?'new':''}"><td>${esc(t)}${isNew?' <span class="pill ok">novo</span>':''}</td><td style="color:var(--muted)">${AUTOR[t]?esc(AUTOR[t]):'—'}</td><td>${o?`<span class="pill info">com ${esc(o.who.split(' ')[0])} até ${ddmm(due(o.d))}</span>`:'<span class="pill ok">na estante</span>'}</td><td>${act}</td></tr>`}).join('')}</tbody></table></div>
   <p class="hint">${LIVROS.length.toLocaleString('pt-BR')} livros. O que entra ou sai aqui muda na busca do leitor na hora. Livro emprestado não pode ser tirado até voltar.</p>`;
 }
-function addBooks(ts){
-  const novos=ts.map(t=>t.trim()).filter(t=>t&&!LIVROS.includes(t));
-  LIVROS.push(...novos);reindex();A.added=[...novos,...A.added];A.mode=null;A.photos=[];A.addT='';A.err='';A.q='';
+function addBooks(bs){
+  const ok=bs.map(b=>({t:b.t.trim(),a:(b.a||'').trim()})).filter(b=>b.t&&!LIVROS.includes(b.t));
+  ok.forEach(b=>{if(b.a)AUTOR[b.t]=b.a});const novos=ok.map(b=>b.t);
+  LIVROS.push(...novos);reindex();A.added=[...novos,...A.added];A.mode=null;A.photos=[];A.addT='';A.addA='';A.err='';A.q='';
   renderAdm();renderApp(true);return novos.length;
 }
 function tHist(){
@@ -485,11 +488,13 @@ function renderAdm(){
 adm.addEventListener('input',e=>{
   if(e.target.id==='aq'){A.q=e.target.value;renderAdm()}
   if(e.target.id==='add-t')A.addT=e.target.value;
+  if(e.target.id==='add-a')A.addA=e.target.value;
   if(e.target.dataset.ph)A.photos[+e.target.dataset.ph].t=e.target.value;
+  if(e.target.dataset.pa)A.photos[+e.target.dataset.pa].a=e.target.value;
 });
 adm.addEventListener('change',e=>{
   if(e.target.id!=='add-f')return;
-  [...e.target.files].forEach(f=>{A.photos.push({url:URL.createObjectURL(f),t:LIDOS[lidoN++%LIDOS.length]})});
+  [...e.target.files].forEach(f=>{{const [t,a]=LIDOS[lidoN++%LIDOS.length];A.photos.push({url:URL.createObjectURL(f),t,a})}});
   renderAdm();
 });
 adm.addEventListener('click',e=>{
@@ -498,13 +503,13 @@ adm.addEventListener('click',e=>{
   if(x==='devolvido'){const l=out(b.dataset.t);D.loans=D.loans.filter(y=>y!==l);D.hist.unshift({t:l.t,who:l.who,op:'Devolução',d:new Date(HOJE)});FRESH=null;renderAdm();renderApp(true)}
   if(x==='cobrar'){b.textContent='Abriria o WhatsApp';b.disabled=true}
   if(x==='resolver'){D.reps[+b.dataset.i].done=true;FRESH=null;renderAdm()}
-  if(x==='acervo'){const r=D.reps[+b.dataset.i];r.done=true;FRESH=null;addBooks([r.t]);A.tab='acervo';renderAdm()}
+  if(x==='acervo'){const r=D.reps[+b.dataset.i];r.done=true;FRESH=null;addBooks([{t:r.t,a:r.autor&&r.autor!=='—'?r.autor:''}]);A.tab='acervo';renderAdm()}
   if(x==='add-man'){A.mode='manual';A.err='';renderAdm();document.getElementById('add-t')?.focus()}
   if(x==='add-foto'){A.mode='foto';A.photos=[];renderAdm()}
   if(x==='add-cancel'){A.mode=null;A.photos=[];A.err='';renderAdm()}
-  if(x==='add-ok'){const t=(A.addT||'').trim();if(!t){A.err='Escreva o título.';return renderAdm()}if(LIVROS.includes(t)){A.err='Esse título já está no acervo.';return renderAdm()}addBooks([t])}
+  if(x==='add-ok'){const t=(A.addT||'').trim();if(!t){A.err='Escreva o título.';return renderAdm()}if(!(A.addA||'').trim()){A.err='Escreva o autor.';return renderAdm()}if(LIVROS.includes(t)){A.err='Esse título já está no acervo.';return renderAdm()}addBooks([{t,a:A.addA}])}
   if(x==='ph-rm'){A.photos.splice(+b.dataset.i,1);renderAdm()}
-  if(x==='ph-ok')addBooks(A.photos.map(p=>p.t));
+  if(x==='ph-ok')addBooks(A.photos.map(p=>({t:p.t,a:p.a})));
   if(x==='rm'){A.rm=b.dataset.t;renderAdm()}
   if(x==='rm-no'){A.rm=null;renderAdm()}
   if(x==='rm-ok'){const t=b.dataset.t;LIVROS.splice(LIVROS.indexOf(t),1);reindex();A.added=A.added.filter(y=>y!==t);A.rm=null;renderAdm();renderApp(true)}
